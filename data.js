@@ -391,3 +391,114 @@ window.CITIES = [
   ["Toronto", "تۆرۆنتۆ", "Toronto", "تورونتو", 43.653, -79.383],
   ["Sydney", "سیدنی", "Sydney", "سيدني", -33.869, 151.209]
 ];
+
+// Pictures (system emoji) for foods, activities and workouts.
+window.EMOJI = {
+  dolma1: "🫑", dolmap: "🫑", yaprax: "🍃", qima: "🍲", tashreeb: "🥣", rice: "🍚", ricev: "🍚", ricebean: "🍛", savar: "🌾", savartom: "🌾", shla: "🍲", fasolia: "🫘", bamya: "🍲", tapsi: "🍆", maqluba: "🍛", biryani: "🍛",
+  kubba: "🧆", kubbam: "🧆", kubbas: "🥣", kubbar: "🧆", kutilk: "🧆", kebab: "🍢", kebabhaw: "🍢", tikka: "🍢", tikkac: "🍢", shifta: "🥩", kfta: "🧆", kalana: "🫓", kade: "🥐", pacha: "🍲", serupe: "🍲", lentil: "🥣", shorba: "🍜",
+  masgouf: "🐟", bainjan: "🍆", kasha: "🍳", makhlama: "🍳", bagilla: "🫘", lablabi: "🥣", kahi: "🥞", quzi: "🍖", mirishkbr: "🍗", goshtnok: "🍲", prshe: "🧅", mkhalal: "🥒", shawc: "🌯", shawm: "🌯", shawplate: "🍽️",
+  falafel: "🧆", falsand: "🥙", sambusa: "🥟", hummus: "🫘", mutabbal: "🍆", tabbouleh: "🥗", salad: "🥗", saladoil: "🥗", fattoush: "🥗", lahm: "🍕", doner: "🌯", kurdishbreakfast: "🍳",
+  tanur: "🫓", samoon: "🥖", tiri: "🫓", lavash: "🫓", nanrun: "🫓", breadw: "🍞", breadb: "🍞", pasta: "🍝", oats: "🥣", oatsdry: "🌾", cornflakes: "🥣", freekeh: "🌾", croissant: "🥐",
+  mast: "🥣", masl: "🥣", greek: "🥣", cheese: "🧀", cheesey: "🧀", labneh: "🥣", qaymaq: "🥛", milk: "🥛", milkl: "🥛", egg: "🥚", eggf: "🍳", omelet: "🍳", eggw: "🥚",
+  chick: "🍗", chickt: "🍗", chickr: "🍗", lamb: "🍖", beef: "🥩", mince: "🥩", liver: "🥩", fish: "🐟", fishf: "🐟", tuna: "🐟", salmon: "🍣", shrimp: "🍤", sausage: "🌭", burgerpat: "🍔", nuggets: "🍗", chickpea: "🫘", lentilc: "🫘", beansr: "🫘", tofu: "🧈", whey: "🥤",
+  dates: "🌴", pomeg: "🍎", grapes: "🍇", figs: "🍇", melon: "🍉", cantaloupe: "🍈", apple: "🍎", banana: "🍌", orange: "🍊", mandarin: "🍊", apricot: "🍑", peach: "🍑", pear: "🍐", plum: "🍑", cherry: "🍒", strawb: "🍓", mulberry: "🫐", quince: "🍐", kiwi: "🥝", mango: "🥭", raisin: "🍇", driedfig: "🍇",
+  walnut: "🌰", almond: "🌰", pista: "🥜", seeds: "🌻", pumpkin: "🎃", peanut: "🥜", cashew: "🥜", chara: "🥜",
+  cucumber: "🥒", tomato: "🍅", lettuce: "🥬", carrot: "🥕", onion: "🧅", pepper: "🫑", broccoli: "🥦", spinach: "🥬", zucchini: "🥒", eggplant: "🍆", potato: "🥔", fries: "🍟", sweetpot: "🍠", corn: "🌽", avocado: "🥑", olives: "🫒", mushroom: "🍄", kulera: "🌿",
+  pizza: "🍕", burger: "🍔", cheeseburger: "🍔", zinger: "🍔", friedchick: "🍗", hotdog: "🌭", chips: "🥔", popcorn: "🍿", pb: "🥜", biscuit: "🍪", cake: "🍰", proteinbar: "🍫",
+  kleicha: "🍪", baklava: "🥮", zalabia: "🍩", halawa: "🍬", kunafa: "🧁", mann: "🍬", zarda: "🍮", muhallabi: "🍮", kishmish: "🌴", choc: "🍫", icecream: "🍨", honey: "🍯", dibs: "🍯", jam: "🍓",
+  teas: "🍵", tea: "🍵", coffee: "☕", nescafe: "☕", latte: "☕", dew: "🥛", cola: "🥤", colaz: "🥤", juice: "🧃", juicem: "🧃", lemonmint: "🍋", energy: "⚡", shake: "🥤", laban: "🥛", water: "💧",
+  sugar: "🍬", oil: "🫒", voil: "🫗", butter: "🧈", tahini: "🥄", mayo: "🥄", ketchup: "🍅",
+  // activities
+  a_walk: "🚶", a_bwalk: "🚶", a_jog: "🏃", a_run: "🏃", a_hike: "⛰️", a_halparke: "💃", a_gym: "🏋️", a_hiit: "⚡", a_cycle: "🚴", a_swim: "🏊", a_football: "⚽", a_futsal: "⚽", a_basket: "🏀", a_volley: "🏐", a_tennis: "🎾", a_pingpong: "🏓",
+  a_wrestle: "🤼", a_box: "🥊", a_rope: "🪢", a_stairs: "🪜", a_yoga: "🧘", a_pilates: "🧘", a_aerobics: "💃", a_ellip: "🏃", a_row: "🚣", a_treadmill: "🏃", a_house: "🧹", a_cook: "🍳", a_farm: "🌱", a_kids: "🧒", a_build: "🧱", a_prayer: "🕌",
+  a_custom: "⭐", a_gym_log: "🏋️",
+  // routines
+  r_begin: "💪", r_seven: "⏱️", r_hiit: "🔥", r_core: "🎯", r_upper: "💪", r_legs: "🦵", r_cardio: "🥊", r_chair: "🪑", r_ramadan: "🌙", r_desk: "💼", r_stretch: "🧘"
+};
+window.CAT_EMOJI = { kurdish: "🍲", bread: "🍞", dairy: "🥛", meat: "🍗", fruit: "🍎", nuts: "🥜", veg: "🥦", snack: "🍔", sweet: "🍰", drink: "🥤", basic: "🫒", mine: "📝", recipe: "🥘" };
+
+// Micronutrients per serving: [fiber g, sugar g, sodium mg, potassium mg, calcium mg, iron mg, vitamin C mg]
+window.MICRO = {
+  dolma1: [1, 1.5, 120, 80, 15, 0.4, 3], dolmap: [6, 9, 720, 480, 90, 2.4, 18], yaprax: [3, 1, 300, 150, 60, 0.8, 2], qima: [6, 5, 700, 600, 60, 3.5, 10], tashreeb: [3, 4, 950, 550, 70, 3.5, 6],
+  rice: [0.6, 0.1, 2, 55, 16, 1.9, 0], ricev: [0.8, 0.3, 250, 70, 18, 2, 0], ricebean: [9, 5, 900, 700, 90, 4.5, 6], savar: [8, 0.2, 200, 125, 18, 1.7, 0], savartom: [8.5, 3, 350, 300, 25, 2, 8],
+  shla: [3, 4, 650, 500, 40, 2.5, 15], fasolia: [9, 5, 650, 700, 100, 3.5, 8], bamya: [4, 5, 600, 550, 110, 2.5, 20], tapsi: [5, 7, 700, 650, 40, 2.2, 12], maqluba: [5, 5, 900, 650, 60, 3, 8], biryani: [3, 4, 1100, 550, 60, 3.5, 6],
+  kubba: [1.5, 0.5, 300, 180, 20, 1.5, 1], kubbam: [3, 1, 450, 300, 30, 2.6, 1], kubbas: [3, 4, 900, 500, 50, 3, 10], kubbar: [0.8, 0.5, 280, 120, 15, 1.2, 1], kutilk: [2.5, 0.5, 280, 180, 18, 1.5, 1],
+  kebab: [0.3, 0.5, 450, 300, 20, 2.2, 2], kebabhaw: [5, 5, 1700, 1100, 120, 6.5, 25], tikka: [0, 0, 350, 320, 15, 2, 0], tikkac: [0.3, 1, 400, 350, 15, 1, 1], shifta: [0.5, 1, 380, 250, 20, 1.8, 2], kfta: [2, 6, 800, 600, 50, 3, 12],
+  kalana: [4, 2, 550, 400, 120, 3, 15], kade: [1.2, 12, 280, 80, 30, 1.5, 0], pacha: [2, 2, 1300, 600, 120, 4, 2], serupe: [1.5, 2, 1100, 500, 100, 3.5, 2], lentil: [8, 4, 750, 600, 50, 4, 5], shorba: [1.5, 2, 900, 350, 30, 1.2, 3],
+  masgouf: [0, 0, 300, 700, 100, 1.5, 3], bainjan: [3, 3.5, 200, 230, 9, 0.3, 2], kasha: [2, 5, 450, 500, 70, 2, 20], makhlama: [1.5, 4, 600, 500, 70, 3, 12], bagilla: [12, 3, 1000, 750, 120, 4, 5], lablabi: [11, 5, 800, 600, 80, 4, 6],
+  kahi: [1.5, 28, 400, 150, 60, 2, 0], quzi: [4, 4, 1600, 900, 70, 6, 3], mirishkbr: [2, 2, 900, 650, 40, 3, 3], goshtnok: [5, 3, 700, 550, 60, 3.5, 5], prshe: [2.5, 5, 280, 180, 25, 0.8, 4], mkhalal: [1, 0.5, 900, 50, 20, 0.2, 2],
+  shawc: [3, 4, 1200, 450, 80, 2.5, 6], shawm: [3, 4, 1300, 450, 80, 3.5, 6], shawplate: [5, 6, 2000, 800, 120, 5, 12], falafel: [1, 0.3, 50, 100, 9, 0.6, 0.5], falsand: [7, 5, 900, 500, 100, 3.5, 8], sambusa: [1, 1, 230, 100, 15, 0.8, 1],
+  hummus: [3.5, 0.2, 230, 140, 25, 1.5, 0], mutabbal: [2, 1.5, 200, 150, 15, 0.4, 1], tabbouleh: [3, 2, 350, 300, 40, 1.5, 25], salad: [3, 6, 15, 500, 40, 0.8, 30], saladoil: [3, 6, 15, 500, 40, 0.8, 30], fattoush: [3.5, 5, 450, 450, 50, 1.5, 25],
+  lahm: [2, 3, 650, 250, 50, 2.5, 3], doner: [3, 4, 1500, 500, 100, 3.5, 6], kurdishbreakfast: [4, 6, 1100, 600, 300, 4, 15],
+  tanur: [2.4, 1.5, 450, 90, 20, 2.5, 0], samoon: [2.2, 2, 500, 100, 25, 2.8, 0], tiri: [0.8, 0.3, 160, 30, 8, 1, 0], lavash: [1, 0.5, 250, 50, 12, 1.5, 0], nanrun: [1.5, 2, 400, 80, 20, 2, 0], breadw: [0.8, 1.5, 150, 30, 40, 1, 0], breadb: [2, 1.5, 140, 80, 30, 0.8, 0],
+  pasta: [2.5, 0.8, 2, 60, 10, 1.8, 0], oats: [4, 1, 10, 165, 20, 2, 0], oatsdry: [4, 0.5, 2, 150, 20, 1.8, 0], cornflakes: [0.9, 3, 200, 30, 1, 8, 6], freekeh: [8, 0.5, 15, 200, 25, 2.5, 0], croissant: [1.5, 6, 250, 70, 20, 1.2, 0],
+  mast: [0, 11, 115, 380, 300, 0.1, 1], masl: [0, 14, 140, 530, 410, 0.2, 2], greek: [0, 7, 70, 280, 220, 0.1, 0], cheese: [0, 0.5, 450, 20, 140, 0.1, 0], cheesey: [0, 0.1, 130, 20, 140, 0.1, 0], labneh: [0, 1.5, 120, 50, 40, 0, 0],
+  qaymaq: [0, 1, 15, 30, 25, 0, 0], milk: [0, 12, 105, 350, 290, 0.1, 0], milkl: [0, 12, 105, 380, 300, 0.1, 0], egg: [0, 0.2, 62, 63, 25, 0.9, 0], eggf: [0, 0.2, 95, 70, 28, 0.9, 0], omelet: [0, 1, 320, 150, 60, 1.8, 0], eggw: [0, 0.7, 165, 160, 7, 0.1, 0],
+  chick: [0, 0, 74, 256, 15, 1, 0], chickt: [0, 0, 95, 240, 12, 1.3, 0], chickr: [0, 0, 650, 450, 30, 2, 0], lamb: [0, 0, 72, 310, 17, 1.9, 0], beef: [0, 0, 60, 330, 12, 2.7, 0], mince: [0, 0, 75, 300, 20, 2.5, 0], liver: [0, 0, 80, 300, 10, 6.5, 1],
+  fish: [0, 0, 120, 600, 30, 0.8, 2], fishf: [0.5, 0, 400, 500, 40, 1.2, 1], tuna: [0, 0, 330, 300, 15, 1.8, 0], salmon: [0, 0, 60, 360, 12, 0.3, 0], shrimp: [0, 0, 110, 260, 70, 0.5, 2], sausage: [0, 0.5, 550, 140, 10, 0.8, 0],
+  burgerpat: [0, 0, 80, 320, 20, 2.5, 0], nuggets: [1, 0.5, 500, 270, 15, 1, 0], chickpea: [12.5, 8, 11, 475, 80, 4.7, 2], lentilc: [15.6, 3.6, 4, 730, 38, 6.6, 3], beansr: [11, 0.6, 2, 710, 50, 5.2, 2], tofu: [2, 0.6, 10, 150, 350, 2.7, 0], whey: [0, 2, 50, 150, 120, 0.3, 0],
+  dates: [2, 19, 1, 200, 20, 0.3, 0], pomeg: [11, 39, 8, 670, 28, 0.8, 29], grapes: [1.4, 23, 3, 290, 15, 0.5, 5], figs: [2.9, 16, 1, 230, 35, 0.4, 2], melon: [1.1, 17, 3, 310, 20, 0.7, 23], cantaloupe: [1.4, 13, 26, 430, 14, 0.3, 59],
+  apple: [4.4, 19, 2, 195, 11, 0.2, 8], banana: [3.1, 14, 1, 420, 6, 0.3, 10], orange: [3.1, 12, 0, 240, 52, 0.1, 70], mandarin: [1.3, 8, 2, 125, 28, 0.1, 20], apricot: [2, 9.5, 1, 270, 13, 0.4, 10], peach: [2.3, 13, 0, 285, 9, 0.4, 10],
+  pear: [5.5, 17, 2, 210, 16, 0.3, 8], plum: [1.8, 13, 0, 205, 8, 0.2, 12], cherry: [3, 18, 0, 310, 18, 0.5, 10], strawb: [3, 7, 2, 230, 24, 0.6, 88], mulberry: [2.4, 11, 14, 270, 55, 2.6, 51], quince: [1.7, 0, 4, 180, 10, 0.6, 14], kiwi: [2, 6.7, 2, 230, 26, 0.2, 56], mango: [2.6, 23, 2, 280, 18, 0.3, 60],
+  raisin: [1.1, 18, 3, 225, 15, 0.6, 1], driedfig: [2.5, 12, 3, 170, 40, 0.5, 0],
+  walnut: [2, 0.8, 1, 130, 30, 0.9, 0], almond: [3.5, 1.2, 0, 210, 75, 1.1, 0], pista: [3, 2.3, 0, 300, 30, 1.2, 1.5], seeds: [2.6, 0.8, 3, 195, 24, 1.6, 0.4], pumpkin: [1.8, 0.4, 2, 240, 15, 2.5, 0.6], peanut: [2.5, 1.2, 5, 200, 28, 1.4, 0], cashew: [1, 1.8, 4, 190, 11, 2, 0.1], chara: [2.5, 1.2, 60, 200, 30, 1.3, 0.2],
+  cucumber: [1.5, 3.4, 4, 300, 32, 0.6, 6], tomato: [1.4, 3.2, 6, 290, 12, 0.3, 17], lettuce: [1.3, 1, 28, 190, 36, 0.9, 9], carrot: [1.7, 2.8, 41, 190, 20, 0.2, 3.5], onion: [1.9, 4.7, 4, 160, 25, 0.2, 8], pepper: [2.5, 5, 5, 250, 8, 0.5, 150],
+  broccoli: [2.4, 1.5, 30, 290, 42, 0.7, 80], spinach: [4.3, 0.8, 125, 840, 245, 6.4, 18], zucchini: [1.8, 3.6, 5, 460, 32, 0.6, 23], eggplant: [2.5, 3.2, 2, 120, 6, 0.2, 1.3], potato: [3.8, 1.5, 10, 730, 15, 0.6, 15], fries: [4, 0.3, 280, 680, 20, 0.9, 5],
+  sweetpot: [3.9, 5.4, 70, 440, 40, 0.8, 3], corn: [2, 4.5, 15, 270, 2, 0.5, 7], avocado: [6.7, 0.7, 7, 485, 12, 0.6, 10], olives: [1.3, 0, 620, 3, 35, 1.3, 0], mushroom: [0.7, 1.2, 4, 220, 2, 0.4, 1.5], kulera: [3, 1, 30, 300, 80, 1.5, 15],
+  pizza: [2.5, 3.8, 640, 180, 200, 2.6, 1], burger: [2, 8, 900, 400, 120, 4, 2], cheeseburger: [6, 45, 1600, 1100, 250, 6, 6], zinger: [3, 6, 1300, 450, 60, 3, 2], friedchick: [0.5, 0, 650, 250, 20, 1, 0], hotdog: [0.8, 4, 700, 150, 25, 2, 0],
+  chips: [1.3, 0.2, 150, 360, 7, 0.5, 6], popcorn: [3.5, 0.2, 2, 80, 2, 0.8, 0], pb: [1, 1.5, 70, 100, 7, 0.3, 0], biscuit: [0.5, 8, 90, 30, 5, 0.6, 0], cake: [0.8, 28, 250, 100, 50, 1.2, 0], proteinbar: [3, 6, 200, 200, 150, 2, 0],
+  kleicha: [1.2, 10, 60, 90, 10, 0.6, 0], baklava: [1, 12, 80, 80, 15, 0.6, 0], zalabia: [0.3, 12, 40, 15, 3, 0.4, 0], halawa: [1.3, 13, 60, 60, 30, 1, 0], kunafa: [1, 30, 300, 80, 150, 0.8, 0], mann: [0.5, 20, 10, 40, 10, 0.3, 0],
+  zarda: [0.6, 30, 10, 60, 10, 0.5, 0], muhallabi: [0.2, 28, 100, 300, 220, 0.2, 1], kishmish: [2, 18, 1, 220, 20, 0.5, 0], choc: [1.5, 23, 35, 170, 85, 1, 0], icecream: [0.5, 15, 55, 140, 90, 0.1, 0.4],
+  honey: [0, 17, 1, 11, 1, 0.1, 0.1], dibs: [0.2, 14, 3, 160, 10, 0.4, 0], jam: [0.2, 10, 6, 15, 4, 0.1, 2],
+  teas: [0, 8, 2, 40, 0, 0, 0], tea: [0, 0, 2, 40, 0, 0, 0], coffee: [0, 0, 5, 115, 5, 0, 0], nescafe: [0.2, 10, 50, 100, 15, 0.1, 0], latte: [0, 17, 170, 550, 400, 0.2, 0], dew: [0, 7, 450, 300, 230, 0.1, 1],
+  cola: [0, 35, 45, 10, 7, 0.1, 0], colaz: [0, 0, 40, 30, 10, 0, 0], juice: [0.5, 21, 2, 500, 27, 0.5, 124], juicem: [0, 20, 10, 100, 10, 0.2, 30], lemonmint: [0.5, 35, 10, 60, 10, 0.2, 20], energy: [0, 27, 200, 10, 30, 0, 0],
+  shake: [0.7, 55, 280, 650, 400, 0.4, 2], laban: [0, 9, 300, 380, 300, 0.1, 1], water: [0, 0, 0, 0, 5, 0, 0],
+  sugar: [0, 4, 0, 0, 0, 0, 0], oil: [0, 0, 0, 0, 0, 0.1, 0], voil: [0, 0, 0, 0, 0, 0, 0], butter: [0, 0, 1, 3, 3, 0, 0], tahini: [1.4, 0.1, 17, 60, 64, 1.3, 0], mayo: [0, 0.1, 90, 3, 1, 0, 0], ketchup: [0.1, 3.7, 160, 55, 3, 0.1, 0.7]
+};
+
+// Daily targets for micronutrients: [fiber, sugar (max), sodium (max), potassium, calcium, iron, vitamin C]  (male / female)
+window.MICRO_TARGET = { m: [34, 50, 2300, 3400, 1000, 8, 90], f: [25, 50, 2300, 2600, 1000, 18, 75] };
+window.MICRO_KEYS = ["fiber", "sugar", "sodium", "potassium", "calcium", "iron", "vitc"];
+
+// Meal planner combos: [food id, servings]
+window.PLAN = {
+  b: [
+    [["egg", 2], ["tanur", 0.5], ["cheese", 1], ["cucumber", 0.5], ["tea", 1]],
+    [["mast", 1], ["honey", 1], ["walnut", 0.5], ["breadb", 1]],
+    [["omelet", 1], ["tomato", 1], ["breadb", 1], ["tea", 1]],
+    [["oats", 1], ["banana", 1], ["milkl", 0.5]],
+    [["labneh", 2], ["olives", 0.5], ["tomato", 1], ["tanur", 0.5], ["tea", 1]],
+    [["greek", 1], ["strawb", 1], ["almond", 0.5]],
+    [["kasha", 1], ["breadb", 1]]
+  ],
+  l: [
+    [["rice", 1], ["fasolia", 1], ["salad", 1]],
+    [["savar", 1], ["shla", 1], ["mast", 0.5]],
+    [["mirishkbr", 1], ["salad", 1]],
+    [["dolma1", 6], ["mast", 0.5], ["salad", 1]],
+    [["qima", 1], ["rice", 1], ["salad", 1]],
+    [["biryani", 0.8], ["salad", 1]],
+    [["bamya", 1], ["rice", 1]],
+    [["tikkac", 2], ["rice", 1], ["salad", 1]],
+    [["fish", 1], ["rice", 1], ["salad", 1]]
+  ],
+  d: [
+    [["tikkac", 2], ["salad", 1], ["tanur", 0.5]],
+    [["lentil", 1], ["breadb", 1], ["salad", 1]],
+    [["egg", 2], ["salad", 1], ["breadb", 1]],
+    [["shorba", 1], ["chick", 1], ["salad", 1]],
+    [["kebab", 2], ["salad", 1], ["tanur", 0.5]],
+    [["tuna", 1], ["salad", 1], ["breadb", 1]],
+    [["masgouf", 0.75], ["salad", 1]],
+    [["hummus", 1], ["falafel", 3], ["salad", 1]]
+  ],
+  s: [
+    [["apple", 1], ["almond", 0.5]],
+    [["dew", 1], ["dates", 1]],
+    [["greek", 1]],
+    [["banana", 1]],
+    [["orange", 1], ["walnut", 0.5]],
+    [["cucumber", 1], ["cheese", 1]],
+    [["pomeg", 0.5], ["pista", 0.5]]
+  ]
+};

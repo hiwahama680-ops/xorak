@@ -1,5 +1,6 @@
 /* Xorak core: storage, language, math, icons. Shared by views.js and sheets.js. */
 "use strict";
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 /* ---------- Storage ---------- */
 const KEY = "xorak.v1";
@@ -16,7 +17,7 @@ function defaults() {
     fast: { plan: 16, start: null, history: [] },
     gym: { sessions: [], active: null },
     ai: { provider: "gemini", key: "", model: "" },
-    chat: [], badges: {}, scans: 0, shares: 0
+    chat: [], badges: {}, scans: 0, shares: 0, plan: null, deviceId: uid()
   };
 }
 function migrate(j) {
@@ -35,6 +36,7 @@ function migrate(j) {
     (day.ex || []).forEach(fixName);
   });
   s.custom.forEach(c => { fixName(c); if (!c.unit) { c.unit = "portion"; c.cnt = 1; c.g = c.g || 0; } });
+  if (!s.deviceId) s.deviceId = uid();
   s.v = 2;
   return s;
 }
@@ -48,10 +50,24 @@ let toastLater = null;
 
 /* ---------- Data ---------- */
 const FOOD = {};
-window.FOODS.forEach(r => { FOOD[r[0]] = { id: r[0], n: [r[1], r[2], r[3], r[4]], unit: r[5], cnt: r[6], g: r[7], kcal: r[8], p: r[9], c: r[10], f: r[11], cat: r[12] }; });
+window.FOODS.forEach(r => { FOOD[r[0]] = { id: r[0], n: [r[1], r[2], r[3], r[4]], unit: r[5], cnt: r[6], g: r[7], kcal: r[8], p: r[9], c: r[10], f: r[11], cat: r[12], mi: window.MICRO[r[0]] || null, em: window.EMOJI[r[0]] }; });
 const ACT = window.ACTIVITIES.map(r => ({ id: r[0], n: [r[1], r[2], r[3], r[4]], met: r[5] }));
 const getFood = id => FOOD[id] || S.custom.find(c => c.id === id);
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const foodEmoji = o => (o && (o.em || window.EMOJI[o.id] || window.CAT_EMOJI[o.cat])) || "🍽️";
+const exEmoji = e => window.EMOJI["a_" + e.id] || window.EMOJI[e.id && e.id.startsWith("r_") ? e.id : ""] || (e.id === "gym" ? "🏋️" : "⭐");
+// The shared AI server (Lovable Cloud). Empty string = each person uses their own key.
+const AI_SERVER = "https://xorak-ai.lovable.app/api/public/xorak-ai";
+const aiReady = () => !!(S.ai.key || AI_SERVER);
+// Other serving sizes for a food: [unit, factor relative to the food's own serving]
+function altServings(f) {
+  const out = [[f.unit, 1]];
+  if (f.unit === "cup") out.push(["bowl", 1.5], ["plate", 2]);
+  else if (f.unit === "plate") out.push(["smallplate", 0.6], ["bigplate", 1.5]);
+  else if (f.unit === "bowl") out.push(["smallbowl", 0.6], ["bigbowl", 1.5]);
+  else if (f.unit === "piece" && f.cnt === 1 && f.g && f.g <= 80 && ["kurdish", "sweet"].includes(f.cat)) out.push(["smallplate", 4], ["bigplate", 8]);
+  else if ((f.unit === "piece" || f.unit === "sheet" || f.unit === "slice") && f.cat === "bread") out.push(["half", 0.5]);
+  return out;
+}
 
 /* ---------- Dates ---------- */
 const pad = n => String(n).padStart(2, "0");
@@ -185,8 +201,11 @@ const exKcal = (met, min, kg = latestWeight()) => (met * 3.5 * kg / 200) * min;
 const stepKcal = steps => Math.max(0, steps - 5000) * 0.04 * (latestWeight() / 70);
 function totals(k = cur) {
   const d = day(k);
-  const r = { kcal: 0, p: 0, c: 0, f: 0, ex: 0, min: 0 };
-  d.food.forEach(e => { r.kcal += e.kcal * e.q; r.p += e.p * e.q; r.c += e.c * e.q; r.f += e.f * e.q; });
+  const r = { kcal: 0, p: 0, c: 0, f: 0, ex: 0, min: 0, mi: [0, 0, 0, 0, 0, 0, 0], miKnown: 0 };
+  d.food.forEach(e => {
+    r.kcal += e.kcal * e.q; r.p += e.p * e.q; r.c += e.c * e.q; r.f += e.f * e.q;
+    if (e.mi) { e.mi.forEach((v, i) => { r.mi[i] += (v || 0) * e.q; }); r.miKnown++; }
+  });
   d.ex.forEach(e => { r.ex += e.kcal; r.min += e.min || 0; });
   r.ex += stepKcal(d.steps || 0);
   return r;
@@ -291,7 +310,12 @@ const P = {
   bulb: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/>',
   dumbbell: '<path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/>',
-  timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4M9 2h6"/>'
+  timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4M9 2h6"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  shuffle: '<path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>',
+  print: '<path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M6 14h12v7H6z"/>'
 };
 const ic = (n, cls = "") => '<svg class="' + cls + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[n] || "") + "</svg>";
 

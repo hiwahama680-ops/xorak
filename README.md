@@ -14,6 +14,11 @@ It runs in Safari and installs to the iPhone home screen like a normal app. No A
 - **Fasting timer** (12:12 to 23:1) and **Ramadan mode** with suhoor/iftar countdown for 36 cities or your location
 - **Progress:** weekly report, weight chart, BMI, body measurements & body-fat estimate, private progress photos, sleep & mood, levels/XP, streaks, 20 achievements
 - **Daily score**, tip of the day, shareable daily card
+- **Voice logging** in Kurdish, Arabic or English; the AI asks one quick question when a detail changes the calories a lot
+- **Vitamins & minerals** (fiber, sugar, salt, potassium, calcium, iron, vitamin C) for every food and your day
+- **Weekly meal planner** with Kurdish meals sized to your goal, shuffle and one-tap logging
+- **Monthly report** you can save as PDF; small/big plate serving sizes
+- **Shared AI** through a private server, so nobody needs their own key
 - Large-text mode, dark mode, kg/lb, works offline, backup & restore
 
 ## Put it on GitHub Pages (free)

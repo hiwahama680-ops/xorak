@@ -12,6 +12,7 @@ function showSheet() { renderSheet(); sheetEl.hidden = false; document.body.clas
 function closeSheet() {
   stopCamera();
   if (SH && SH.type === "player") stopPlayer();
+  if (SH && SH.type === "aiPhoto" && SH.rec) { try { mediaRec.onstop = null; mediaRec.stop(); mediaRec.stream.getTracks().forEach(tr => tr.stop()); } catch (e) { /* ignore */ } }
   SH = null; STACK = []; sheetEl.hidden = true; sheetEl.innerHTML = ""; document.body.classList.remove("locked"); render();
 }
 function sheetTop(title, opts = {}) {
@@ -100,14 +101,14 @@ function foodResults() {
 function foodRows() {
   if (SH.cat === "meals") {
     if (!S.meals.length) return '<div class="empty pad">' + esc(t("noMeals")) + "</div>";
-    return S.meals.slice().reverse().map(m => '<button class="row" data-act="addSavedMeal" data-id="' + m.id + '"><span class="thumb sun">' + ic("bowl") + '</span><div class="grow"><div class="t">' + esc(m.name) + '</div><div class="s">' + esc(m.items.map(nm).join(" · ")) + '</div></div><div class="k num">' + fmt(m.items.reduce((a, e) => a + e.kcal * e.q, 0)) + "</div></button>").join("");
+    return S.meals.slice().reverse().map(m => '<button class="row" data-act="addSavedMeal" data-id="' + m.id + '"><span class="fthumb">' + (m.items[0] ? foodEmoji(m.items[0]) : "🍽️") + '</span><div class="grow"><div class="t">' + esc(m.name) + '</div><div class="s">' + esc(m.items.map(nm).join(" · ")) + '</div></div><div class="k num">' + fmt(m.items.reduce((a, e) => a + e.kcal * e.q, 0)) + "</div></button>").join("");
   }
   const list = foodResults();
   if (!list.length) {
     return '<div class="empty pad">' + esc(SH.cat === "fav" ? t("noFav") : SH.cat === "mine" ? t("noMine") : SH.cat === "recent" ? t("noRecent") : t("noResults")) + "</div>" +
       (SH.q ? '<div class="stack"><button class="btn ghost block" data-act="aiTextFrom">' + ic("spark") + esc(t("askAiAbout", { n: SH.q })) + '</button><button class="btn ghost block" data-act="customFood">' + ic("pen") + esc(t("createNamed", { n: SH.q })) + "</button></div>" : "");
   }
-  return list.map(f => '<button class="row" data-act="foodPick" data-id="' + esc(f.id) + '"><div class="grow"><div class="t">' + esc(nm(f)) + (S.fav.includes(f.id) ? ' <span class="star">★</span>' : "") + '</div><div class="s num">' + esc(servingLabel(f)) + '</div></div><div class="k num">' + fmt(f.kcal) + " <small>" + esc(t("kcal")) + '</small></div><span class="plus-mini" data-act="quickPick" data-id="' + esc(f.id) + '" role="button" aria-label="' + esc(t("add")) + '">' + ic("plus") + "</span></button>").join("");
+  return list.map(f => '<button class="row" data-act="foodPick" data-id="' + esc(f.id) + '"><span class="fthumb">' + foodEmoji(f) + '</span><div class="grow"><div class="t">' + esc(nm(f)) + (S.fav.includes(f.id) ? ' <span class="star">★</span>' : "") + '</div><div class="s num">' + esc(servingLabel(f)) + '</div></div><div class="k num">' + fmt(f.kcal) + " <small>" + esc(t("kcal")) + '</small></div><span class="plus-mini" data-act="quickPick" data-id="' + esc(f.id) + '" role="button" aria-label="' + esc(t("add")) + '">' + ic("plus") + "</span></button>").join("");
 }
 SHEETS.food = () => {
   const recipe = SH.mode === "recipe";
@@ -117,19 +118,34 @@ SHEETS.food = () => {
     (recipe ? "" : '<div class="btns" style="margin-bottom:12px"><button class="btn ghost" data-act="aiPhoto">' + ic("camera") + esc(t("scan")) + '</button><button class="btn ghost" data-act="barcode">' + ic("barcode") + esc(t("barcode")) + '</button><button class="btn ghost" data-act="customFood">' + ic("pen") + esc(t("create")) + "</button></div>") +
     '<div class="card" style="padding-block:4px"><div class="list" id="food-list">' + foodRows() + "</div></div>";
 };
+function servedFood(f, alt) {
+  const opts = altServings(f), a = opts[alt || 0] || opts[0];
+  if (!a || a[1] === 1) return f;
+  const k = a[1], mul = v => (v || 0) * k;
+  return Object.assign({}, f, { unit: a[0], cnt: 1, g: f.g ? Math.round(f.g * k) : 0, kcal: mul(f.kcal), p: mul(f.p), c: mul(f.c), f: mul(f.f), mi: f.mi ? f.mi.map(mul) : null });
+}
+function microTiles(mi, q = 1, full) {
+  if (!mi) return "";
+  const keys = full ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2];
+  const unit = i => (i < 2 ? t("g") : t("mg"));
+  return '<div class="micro-row">' + keys.map(i => '<div><b class="num">' + fmt(mi[i] * q, i === 5 ? 1 : 0) + " " + esc(unit(i)) + "</b><span>" + esc(t("mi_" + window.MICRO_KEYS[i])) + "</span></div>").join("") + "</div>";
+}
 SHEETS.foodDetail = () => {
-  const f = getFood(SH.id), recipe = SH.mode === "recipe";
+  const f0 = getFood(SH.id), recipe = SH.mode === "recipe";
+  const f = servedFood(f0, SH.alt);
   const isFav = S.fav.includes(f.id);
   const q = SH.qty, byG = SH.unitMode === "g" && f.g;
   const val = k => f[k] * q;
   let h = sheetTop(nm(f), { extra: recipe ? "" : '<button class="iconbtn" data-act="toggleFav" aria-label="' + esc(t("favorite")) + '" aria-pressed="' + isFav + '">' + (isFav ? '<span class="star big">★</span>' : ic("star")) + "</button>" }) + '<div class="stack">' +
-    '<p class="muted" style="margin:0">' + esc(servingLabel(f)) + (lang() !== "en" && f.n[0] !== nm(f) ? " · " + esc(f.n[0]) : "") + "</p>";
+    '<div class="food-hero"><span class="big-emoji">' + foodEmoji(f0) + '</span><div><div class="muted">' + esc(servingLabel(f)) + '</div>' + (lang() !== "en" && f.n[0] !== nm(f) ? '<div class="small muted">' + esc(f.n[0]) + "</div>" : "") + "</div></div>";
+  const opts = altServings(f0);
+  if (opts.length > 1 && SH.unitMode !== "g") h += '<div class="field"><span>' + esc(t("servingSize")) + '</span><div class="chips">' + opts.map((o, i) => '<button class="chip' + ((SH.alt || 0) === i ? " on" : "") + '" data-act="servAlt" data-i="' + i + '">' + esc(t("u_" + o[0])) + "</button>").join("") + "</div></div>";
   if (f.g && f.unit !== "g") h += seg("unitMode", "um", [["srv", t("servings")], ["g", t("grams")]], SH.unitMode || "srv");
   h += byG
     ? '<div class="field"><span>' + esc(t("grams")) + '</span><div class="stepper"><button data-act="gStep" data-d="-10" aria-label="−">−</button><input class="input num" id="grams" inputmode="decimal" value="' + fmt(q * f.g) + '"><button data-act="gStep" data-d="10" aria-label="+">+</button></div></div>'
     : '<div class="field"><span>' + esc(t("servings")) + '</span><div class="stepper"><button data-act="qty" data-d="-0.5" aria-label="−">−</button><input class="input num" id="qty" inputmode="decimal" value="' + fmt(q, 2) + '"><button data-act="qty" data-d="0.5" aria-label="+">+</button></div></div>' +
       '<div class="chips">' + [0.5, 1, 1.5, 2, 3].map(v => '<button class="chip' + (q === v ? " on" : "") + '" data-act="qtySet" data-v="' + v + '">' + fmt(v, 2) + "×</button>").join("") + "</div>";
-  h += nutriTiles(val("kcal"), val("p"), val("c"), val("f"));
+  h += nutriTiles(val("kcal"), val("p"), val("c"), val("f")) + microTiles(f.mi, q);
   if (recipe) h += '<button class="btn sun block" data-act="addToRecipe">' + esc(t("addToRecipe")) + "</button>";
   else {
     h += mealSeg() + '<button class="btn sun block big" data-act="addFood">' + esc(t("addTo", { meal: mealName(SH.m) })) + "</button>";
@@ -154,9 +170,9 @@ SHEETS.entry = () => {
   const e = day().food.find(x => x.u === SH.u);
   if (!e) return sheetTop("");
   const q = SH.qty;
-  return sheetTop(nm(e)) + '<div class="stack"><p class="muted" style="margin:0">' + esc(servingLabel(e)) + "</p>" +
+  return sheetTop(nm(e)) + '<div class="stack"><div class="food-hero"><span class="big-emoji">' + foodEmoji(e) + '</span><div class="muted">' + esc(servingLabel(e)) + "</div></div>" +
     '<div class="field"><span>' + esc(t("servings")) + '</span><div class="stepper"><button data-act="qty" data-d="-0.5" aria-label="−">−</button><input class="input num" id="qty" inputmode="decimal" value="' + fmt(q, 2) + '"><button data-act="qty" data-d="0.5" aria-label="+">+</button></div></div>' +
-    nutriTiles(e.kcal * q, e.p * q, e.c * q, e.f * q) + mealSeg() +
+    nutriTiles(e.kcal * q, e.p * q, e.c * q, e.f * q) + microTiles(e.mi, q) + mealSeg() +
     '<div class="btns"><button class="btn danger" data-act="delEntry">' + ic("trash") + esc(t("remove")) + '</button><button class="btn sun" data-act="saveEntry">' + esc(t("save")) + "</button></div></div>";
 };
 SHEETS.saveMeal = () => sheetTop(t("saveAsMeal")) + '<div class="stack"><p class="small muted" style="margin:0">' + esc(t("saveMealDesc")) + '</p><label class="field"><span>' + esc(t("name")) + '</span><input class="input" id="sm-name" value="' + esc(SH.name) + '"></label><button class="btn sun block" data-act="doSaveMeal">' + esc(t("save")) + "</button></div>";
@@ -194,7 +210,7 @@ SHEETS.ex = () => {
   const q = norm(SH.q);
   const list = ACT.filter(a => !q || a.n.some(x => norm(x).includes(q)));
   return sheetTop(t("logExercise")) + '<div class="search" style="margin-bottom:12px">' + ic("search") + '<input class="input" id="ex-q" type="search" autocomplete="off" placeholder="' + esc(t("searchActivities")) + '" value="' + esc(SH.q || "") + '"></div>' +
-    '<div class="card" style="padding-block:4px"><div class="list" id="ex-list">' + list.map(a => '<button class="row" data-act="exPick" data-id="' + a.id + '"><div class="grow"><div class="t">' + esc(nm(a)) + '</div><div class="s num">~' + fmt(exKcal(a.met, 30)) + " " + esc(t("kcal")) + " / " + fmt(30) + " " + esc(t("min")) + "</div></div>" + ic("right", "flip") + "</button>").join("") + "</div></div>" +
+    '<div class="card" style="padding-block:4px"><div class="list" id="ex-list">' + list.map(a => '<button class="row" data-act="exPick" data-id="' + a.id + '"><span class="fthumb green">' + exEmoji(a) + '</span><div class="grow"><div class="t">' + esc(nm(a)) + '</div><div class="s num">~' + fmt(exKcal(a.met, 30)) + " " + esc(t("kcal")) + " / " + fmt(30) + " " + esc(t("min")) + "</div></div>" + ic("right", "flip") + "</button>").join("") + "</div></div>" +
     '<h3 class="section-title">' + esc(t("customExercise")) + '</h3><div class="card stack"><label class="field"><span>' + esc(t("name")) + '</span><input class="input" id="cx-name"></label><div class="grid2"><label class="field"><span>' + esc(t("minutes")) + '</span><input class="input num" id="cx-min" inputmode="numeric"></label><label class="field"><span>' + esc(t("kcal")) + '</span><input class="input num" id="cx-kcal" inputmode="numeric"></label></div><button class="btn leaf block" data-act="cxAdd">' + esc(t("add")) + "</button></div>";
 };
 SHEETS.exEntry = () => {
@@ -381,9 +397,22 @@ SHEETS.gymPick = () => {
 
 /* ---------- AI ---------- */
 SHEETS.aiPhoto = () => {
-  if (!S.ai.key) return sheetTop(t("scanMeal")) + aiNeedKey();
-  let h = sheetTop(SH.mode === "text" ? t("describeMeal") : t("scanMeal")) + '<div class="stack">';
+  const title = SH.mode === "text" ? t("describeMeal") : SH.mode === "voice" ? t("voiceLog") : t("scanMeal");
+  if (!aiReady()) return sheetTop(title) + aiNeedKey();
+  let h = sheetTop(title) + '<div class="stack">';
+  if (SH.ask && !SH.items) {
+    h += '<div class="ai-ask"><span class="ask-ic">🤔</span><p>' + esc(SH.ask.q) + '</p></div><div class="chips wrap">' + (SH.ask.options || []).map((o, i) => '<button class="chip big" data-act="aiAnswer" data-i="' + i + '">' + esc(o) + "</button>").join("") + "</div>" +
+      '<div class="chat-input" style="position:static;margin:0"><input class="input" id="ai-answer" placeholder="' + esc(t("orTypeAnswer")) + '"><button class="btn sun" data-act="aiAnswer">' + esc(t("send")) + "</button></div>" +
+      (SH.busy ? '<div class="notice"><span class="spinner sm"></span> ' + esc(t("analyzing")) + "</div>" : "") + (SH.err ? '<div class="notice err">' + esc(SH.err) + "</div>" : "");
+    return h + "</div>";
+  }
   if (!SH.items) {
+    if (SH.mode === "voice") {
+      h += '<div class="voice"><button class="mic-btn' + (SH.rec ? " rec" : "") + '" data-act="' + (SH.rec ? "recStop" : "recStart") + '" aria-label="' + esc(SH.rec ? t("stopRec") : t("startRec")) + '"' + (SH.busy ? " disabled" : "") + ">" + ic(SH.rec ? "stop" : "mic") + "</button>" +
+        '<div class="voice-status">' + (SH.busy ? '<span class="spinner sm"></span> ' + esc(t("analyzing")) : SH.rec ? '<b class="num" id="rec-time">' + loc("0:00") + "</b> · " + esc(t("listening")) : esc(t("voiceHelp"))) + "</div>" +
+        '<p class="small muted center">' + esc(t("voiceExample")) + "</p></div>" + (SH.err ? '<div class="notice err">' + esc(SH.err) + "</div>" : "");
+      return h + "</div>";
+    }
     if (SH.mode === "text") {
       h += '<p class="muted small" style="margin:0">' + esc(t("describeHelp")) + '</p><textarea class="input" id="ai-desc" placeholder="' + esc(t("describePh")) + '">' + esc(SH.desc || "") + "</textarea>";
     } else {
@@ -396,7 +425,7 @@ SHEETS.aiPhoto = () => {
   } else {
     if (SH.img) h += '<img class="photo-prev" src="' + SH.img + '" alt="" style="max-height:160px">';
     h += '<div class="card" style="padding-block:4px"><div class="list">' + SH.items.map((it, i) =>
-      '<div class="row"><input type="checkbox" class="check" data-ai-i="' + i + '"' + (it.on ? " checked" : "") + ' aria-label="' + esc(t("include")) + '"><div class="grow"><div class="t wrap-s">' + esc(nm(it)) + '</div><div class="s num">' + esc(it.s) + " · " + esc(t("p")) + fmt(it.p * it.q) + " " + esc(t("c")) + fmt(it.c * it.q) + " " + esc(t("f")) + fmt(it.f * it.q) + '</div></div><div class="stepper mini"><button data-act="aiQty" data-i="' + i + '" data-d="-0.25" aria-label="−">−</button><b class="num">' + fmt(it.kcal * it.q) + '</b><button data-act="aiQty" data-i="' + i + '" data-d="0.25" aria-label="+">+</button></div></div>').join("") + "</div></div>";
+      '<div class="row"><input type="checkbox" class="check" data-ai-i="' + i + '"' + (it.on ? " checked" : "") + ' aria-label="' + esc(t("include")) + '"><span class="fthumb">' + foodEmoji(it) + '</span><div class="grow"><div class="t wrap-s">' + esc(nm(it)) + '</div><div class="s num">' + esc(it.s) + " · " + esc(t("p")) + fmt(it.p * it.q) + " " + esc(t("c")) + fmt(it.c * it.q) + " " + esc(t("f")) + fmt(it.f * it.q) + '</div></div><div class="stepper mini"><button data-act="aiQty" data-i="' + i + '" data-d="-0.25" aria-label="−">−</button><b class="num">' + fmt(it.kcal * it.q) + '</b><button data-act="aiQty" data-i="' + i + '" data-d="0.25" aria-label="+">+</button></div></div>').join("") + "</div></div>";
     if (SH.note) h += '<div class="notice ok small">' + esc(SH.note) + "</div>";
     const tot = SH.items.filter(i => i.on).reduce((a, i) => a + i.kcal * i.q, 0);
     h += mealSeg() + '<p class="small muted" style="margin:0">' + esc(t("aiCheck")) + "</p>" +
@@ -404,11 +433,40 @@ SHEETS.aiPhoto = () => {
   }
   return h + "</div>";
 };
+let mediaRec = null, recChunks = [], recStart = 0;
+async function startRecording() {
+  SH.err = "";
+  try {
+    if (!navigator.mediaDevices || !window.MediaRecorder) throw new Error("unsupported");
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mime = ["audio/mp4", "audio/webm", "audio/ogg"].find(m => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || "";
+    mediaRec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    recChunks = [];
+    mediaRec.ondataavailable = e => { if (e.data && e.data.size) recChunks.push(e.data); };
+    mediaRec.onstop = async () => {
+      stream.getTracks().forEach(tr => tr.stop());
+      const type = (mediaRec.mimeType || mime || "audio/mp4").split(";")[0];
+      const blob = new Blob(recChunks, { type });
+      if (!SH || SH.type !== "aiPhoto") return;
+      if (blob.size < 1500) { SH.rec = false; SH.err = t("tooShort"); renderSheet(); return; }
+      const data = await new Promise(ok => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.readAsDataURL(blob); });
+      SH.rec = false; SH.audio = { data, mime: type }; runFoodAI();
+    };
+    mediaRec.start(); recStart = Date.now(); SH.rec = true; renderSheet();
+    setTimeout(() => { if (mediaRec && mediaRec.state === "recording" && Date.now() - recStart > 59000) mediaRec.stop(); }, 60000);
+  } catch (e) {
+    SH.rec = false;
+    SH.err = t("micUnavailable");
+    SH.mode = "text"; SH.focus = "ai-desc";
+    renderSheet();
+  }
+}
+function stopRecording() { try { if (mediaRec && mediaRec.state === "recording") mediaRec.stop(); } catch (e) { /* ignore */ } }
 function aiNeedKey() {
   return '<div class="stack"><div class="scan-hero">' + ic("spark") + "<p>" + esc(t("aiNeedKey")) + '</p></div><button class="btn sun block big" data-act="goAiSettings">' + esc(t("setUpAi")) + '</button><button class="btn ghost block" data-act="foodSearch">' + ic("search") + esc(t("logFood")) + "</button></div>";
 }
 SHEETS.coach = () => {
-  if (!S.ai.key) return sheetTop(t("coach")) + aiNeedKey();
+  if (!aiReady()) return sheetTop(t("coach")) + aiNeedKey();
   const msgs = S.chat.slice(-30);
   return sheetTop(t("coach")) + '<div class="chat" id="chat">' +
     (msgs.length ? "" : '<div class="msg ai">' + esc(t("coachHello")) + '</div><div class="chips wrap">' + ["q1", "q2", "q3", "q4", "q5"].map(q => '<button class="chip" data-act="coachAsk" data-q="' + esc(t(q)) + '">' + esc(t(q)) + "</button>").join("") + "</div>") +
@@ -418,10 +476,20 @@ SHEETS.coach = () => {
     '</div><div class="chat-input"><input class="input" id="coach-in" placeholder="' + esc(t("askAnything")) + '" autocomplete="off" enterkeyhint="send"><button class="btn sun" data-act="coachSend"' + (SH.busy ? " disabled" : "") + ">" + esc(t("send")) + "</button></div>" +
     (msgs.length ? '<button class="link" style="margin-top:10px" data-act="coachClear">' + esc(t("clearChat")) + "</button>" : "");
 };
+const geminiParts = parts => parts.map(p => (p.image ? { inline_data: { mime_type: "image/jpeg", data: p.image } } : p.audio ? { inline_data: { mime_type: p.audio.mime, data: p.audio.data } } : { text: p.text }));
 async function callAI({ system, messages, json }) {
   const key = S.ai.key.trim(), model = (S.ai.model || defaultModel()).trim();
+  if (!key && AI_SERVER) {
+    const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: geminiParts(m.parts) }));
+    const res = await fetch(AI_SERVER, { method: "POST", headers: { "content-type": "application/json", "x-device-id": S.deviceId }, body: JSON.stringify({ system: system || null, contents, json: !!json }) });
+    const j = await res.json().catch(() => ({}));
+    if (res.status === 429) throw new Error(t("aiLimit"));
+    if (!res.ok || typeof j.text !== "string") throw new Error(j.error || "HTTP " + res.status);
+    return j.text;
+  }
+  if (S.ai.provider === "claude" && messages.some(m => m.parts.some(p => p.audio))) throw new Error(t("voiceNeedsGemini"));
   if (S.ai.provider === "gemini") {
-    const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: m.parts.map(p => (p.image ? { inline_data: { mime_type: "image/jpeg", data: p.image } } : { text: p.text })) }));
+    const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: geminiParts(m.parts) }));
     const body = { contents, generationConfig: { temperature: 0.4 } };
     if (system) body.systemInstruction = { parts: [{ text: system }] };
     if (json) body.generationConfig.responseMimeType = "application/json";
@@ -445,8 +513,10 @@ const parseJSON = s => { const m = s.match(/\{[\s\S]*\}/); return JSON.parse(m ?
 const LANG_NAME = { en: "English", ckb: "Sorani Kurdish (Arabic script)", kmr: "Kurmanji Kurdish (Latin script, Badini style)", ar: "Iraqi-friendly Modern Standard Arabic" };
 const FOOD_PROMPT = "You are a nutrition expert who knows Kurdish, Iraqi and Middle Eastern home cooking very well (dolma, yaprax, qima, tashreeb, biryani, kubba, shifta, kebab, tikka, savar/bulgur, shla, fasolia, bamya, tapsi, kalana, kade, tanuri and samoon bread, dew, mast, geymar, kleicha, baklava) and international food. " +
   "Identify every food and drink in the user's photo or description, estimate the portion realistically (home portions are often generous and cooked with oil), and estimate nutrition for the portion. If the image is a nutrition label, read it and return one serving. " +
-  'Reply with JSON only: {"items":[{"en":"English name","ckb":"Sorani Kurdish name","kmr":"Kurmanji Kurdish name","ar":"Arabic name","portion":"short portion text in the user\'s language","grams":300,"kcal":420,"protein":9,"carbs":54,"fat":19}],"note":"one short helpful sentence in the user\'s language"}. ' +
-  "Numbers are for the whole portion. If you cannot see food, return an empty items list and explain in note.";
+  'Reply with JSON only: {"items":[{"en":"English name","ckb":"Sorani Kurdish name","kmr":"Kurmanji Kurdish name","ar":"Arabic name","portion":"short portion text in the user\'s language","grams":300,"kcal":420,"protein":9,"carbs":54,"fat":19,"fiber":6,"sugar":9,"sodium":720,"potassium":480,"calcium":90,"iron":2.4,"vitc":18}],"note":"one short helpful sentence in the user\'s language"}. ' +
+  "Numbers are for the whole portion (fiber, sugar in g; sodium, potassium, calcium, iron, vitc in mg). If you cannot see or hear food, return an empty items list and explain in note. " +
+  "Audio input is the user speaking about their meal in Kurdish (Sorani or Kurmanji), Arabic or English. " +
+  'Ask before guessing: if ONE missing detail would change the total calories by more than 25% (for example: raw or cooked weight, how many pieces, fried or grilled, with or without sugar, a small or large plate) and you have not already asked, reply ONLY with {"question":"short question in the user\'s language","options":["2-4 short answers in the user\'s language"]} and no items. Never ask more than one question in a row.';
 async function imageToBase64(file, max = 1024) {
   const url = URL.createObjectURL(file);
   try {
@@ -457,17 +527,34 @@ async function imageToBase64(file, max = 1024) {
     return c.toDataURL("image/jpeg", 0.82);
   } finally { URL.revokeObjectURL(url); }
 }
-async function runFoodAI() {
+function guessEmoji(name) {
+  const words = norm(name).split(/[^a-z]+/).filter(w => w.length > 2);
+  for (const w of words) { const f = Object.values(FOOD).find(x => norm(x.n[0]).split(/[^a-z]+/).includes(w)); if (f) return foodEmoji(f); }
+  return "🍽️";
+}
+async function runFoodAI(answer) {
   SH.busy = true; SH.err = ""; renderSheet();
   const me = SH;
   try {
-    const parts = [];
-    if (me.mode === "text") parts.push({ text: "Meal description: " + me.desc });
-    else { parts.push({ image: me.img.split(",")[1] }); parts.push({ text: me.hint ? "Extra info from the user: " + me.hint : "Analyze this meal." }); }
-    parts.push({ text: "The user's language is " + LANG_NAME[lang()] + "." });
-    const out = parseJSON(await callAI({ system: FOOD_PROMPT, messages: [{ role: "user", parts }], json: true }));
-    const items = (out.items || []).map(i => ({ id: "ai", n: [String(i.en || "Food"), String(i.ckb || i.en || ""), String(i.kmr || i.en || ""), String(i.ar || i.en || "")], s: String(i.portion || (i.grams ? i.grams + " g" : "")), g: +i.grams || 0, kcal: +i.kcal || 0, p: +i.protein || 0, c: +i.carbs || 0, f: +i.fat || 0, q: 1, on: true }));
-    if (!items.length) me.err = out.note || t("aiNoFood"); else { me.items = items; me.note = out.note || ""; S.scans++; save(); }
+    if (!me.conv || answer == null) {
+      const parts = [];
+      if (me.mode === "text") parts.push({ text: "Meal description: " + me.desc });
+      else if (me.mode === "voice") { parts.push({ audio: me.audio }); parts.push({ text: "This is a voice note describing what I ate." }); }
+      else { parts.push({ image: me.img.split(",")[1] }); parts.push({ text: me.hint ? "Extra info from the user: " + me.hint : "Analyze this meal." }); }
+      parts.push({ text: "The user's language is " + LANG_NAME[lang()] + "." });
+      me.conv = [{ role: "user", parts }];
+    } else {
+      me.conv.push({ role: "user", parts: [{ text: "Answer: " + answer + ". Now give the items JSON. Do not ask another question." }] });
+    }
+    const raw = await callAI({ system: FOOD_PROMPT, messages: me.conv, json: true });
+    const out = parseJSON(raw);
+    me.conv.push({ role: "assistant", parts: [{ text: raw }] });
+    if (out.question && !(out.items && out.items.length) && me.conv.length < 4) { me.ask = { q: String(out.question), options: (out.options || []).map(String).slice(0, 4) }; }
+    else {
+      const items = (out.items || []).map(i => ({ id: "ai", n: [String(i.en || "Food"), String(i.ckb || i.en || ""), String(i.kmr || i.en || ""), String(i.ar || i.en || "")], s: String(i.portion || (i.grams ? i.grams + " g" : "")), g: +i.grams || 0, kcal: +i.kcal || 0, p: +i.protein || 0, c: +i.carbs || 0, f: +i.fat || 0, mi: [i.fiber, i.sugar, i.sodium, i.potassium, i.calcium, i.iron, i.vitc].map(v => +v || 0), em: guessEmoji(String(i.en || "")), q: 1, on: true }));
+      me.ask = null;
+      if (!items.length) me.err = out.note || t("aiNoFood"); else { me.items = items; me.note = out.note || ""; S.scans++; save(); }
+    }
   } catch (e) { me.err = t("aiError") + " " + e.message; }
   me.busy = false;
   if (SH === me) renderSheet();
@@ -613,7 +700,7 @@ SHEETS.importData = () => sheetTop(t("importData")) + '<div class="stack"><p cla
 /* ---------- Actions ---------- */
 function pushRecent(id) { S.recent = [id].concat(S.recent.filter(x => x !== id)).slice(0, 40); }
 function snapshot(f, q, m) {
-  return { u: uid(), id: f.id, n: f.n.slice(), unit: f.unit || null, cnt: f.cnt || 1, g: f.g || 0, s: f.s || "", kcal: +f.kcal || 0, p: +f.p || 0, c: +f.c || 0, f: +f.f || 0, q, m };
+  return { u: uid(), id: f.id, n: f.n.slice(), unit: f.unit || null, cnt: f.cnt || 1, g: f.g || 0, s: f.s || "", kcal: +f.kcal || 0, p: +f.p || 0, c: +f.c || 0, f: +f.f || 0, mi: f.mi ? f.mi.slice() : null, em: f.em || foodEmoji(f), q, m };
 }
 function addEntry(f, q, m, k = cur) {
   day(k, true).food.push(snapshot(f, q, m));
@@ -716,7 +803,8 @@ const A = {
   unitMode: el => { readQty(); SH.unitMode = el.dataset.um; renderSheet(); },
   gStep: el => { readQty(); const f = getFood(SH.id); SH.qty = Math.max(1, Math.round(SH.qty * f.g + Number(el.dataset.d))) / f.g; renderSheet(); },
   toggleFav: () => { const id = SH.id; S.fav = S.fav.includes(id) ? S.fav.filter(x => x !== id) : [id].concat(S.fav); save(); renderSheet(); },
-  addFood: () => { readQty(); addEntry(getFood(SH.id), SH.qty, SH.m); const m = SH.m; closeSheet(); toast(t("addedTo", { meal: mealName(m) })); },
+  addFood: () => { readQty(); addEntry(servedFood(getFood(SH.id), SH.unitMode === "g" ? 0 : SH.alt), SH.qty, SH.m); const m = SH.m; closeSheet(); toast(t("addedTo", { meal: mealName(m) })); },
+  servAlt: el => { readQty(); SH.alt = Number(el.dataset.i); SH.qty = 1; renderSheet(); },
   delCustom: () => A.delCustomId({ dataset: { id: SH.id } }),
   delCustomId: el => { const id = el.dataset.id; S.custom = S.custom.filter(c => c.id !== id); S.fav = S.fav.filter(x => x !== id); S.recent = S.recent.filter(x => x !== id); save(); if (SH && SH.type === "myFoods") renderSheet(); else closeSheet(); },
   customFood: () => pushSheet({ type: "custom", m: curMeal(), name: (SH && SH.q) || "" }),
@@ -753,7 +841,7 @@ const A = {
   rcAdd: () => { RECIPE.name = document.getElementById("rc-name").value; pushSheet({ type: "food", mode: "recipe", cat: "all", q: "" }); },
   rcServ: el => { RECIPE.name = document.getElementById("rc-name").value; RECIPE.servings = Math.max(1, RECIPE.servings + Number(el.dataset.d)); renderSheet(); },
   rcDel: el => { RECIPE.name = document.getElementById("rc-name").value; RECIPE.items.splice(Number(el.dataset.i), 1); renderSheet(); },
-  addToRecipe: () => { readQty(); RECIPE.items.push(snapshot(getFood(SH.id), SH.qty, "")); openSheet({ type: "recipe" }); },
+  addToRecipe: () => { readQty(); RECIPE.items.push(snapshot(servedFood(getFood(SH.id), SH.unitMode === "g" ? 0 : SH.alt), SH.qty, "")); openSheet({ type: "recipe" }); },
   rcSave: () => {
     const name = document.getElementById("rc-name").value.trim();
     if (!name || !RECIPE.items.length) { document.getElementById("rc-err").innerHTML = '<div class="notice err">' + esc(t("recipeNeed")) + "</div>"; return; }
@@ -878,7 +966,15 @@ const A = {
     runFoodAI();
   },
   aiQty: el => { const it = SH.items[Number(el.dataset.i)]; it.q = Math.max(0.25, Math.round((it.q + Number(el.dataset.d)) * 4) / 4); renderSheet(); },
-  aiRetry: () => { SH.items = null; SH.err = ""; renderSheet(); },
+  aiRetry: () => { SH.items = null; SH.err = ""; SH.conv = null; SH.ask = null; SH.audio = null; renderSheet(); },
+  aiVoice: () => openSheet({ type: "aiPhoto", mode: "voice", m: curMeal() }),
+  recStart: () => startRecording(),
+  recStop: () => stopRecording(),
+  aiAnswer: el => {
+    let a = el.dataset.i != null ? SH.ask.options[Number(el.dataset.i)] : (document.getElementById("ai-answer") || {}).value;
+    a = String(a || "").trim(); if (!a) return;
+    runFoodAI(a);
+  },
   aiAdd: () => { const items = SH.items.filter(i => i.on); if (!items.length) return; items.forEach(i => addEntry(i, i.q, SH.m)); const m = SH.m; closeSheet(); toast(t("addedTo", { meal: mealName(m) })); },
   coach: () => openSheet({ type: "coach", full: true }),
   coachSend: () => { const i = document.getElementById("coach-in"); coachSend(i.value); },
@@ -942,6 +1038,132 @@ function readAiInputs() {
   if (m) S.ai.model = m.value.trim();
 }
 
+/* ---------- Nutrients ---------- */
+SHEETS.nutrients = () => {
+  const tt = totals(), tg = targets(), mt = window.MICRO_TARGET[S.profile.sex === "f" ? "f" : "m"];
+  const bar = (label, v, goal, unit, color, isMax) => {
+    const pct = Math.min(1, v / goal), over = isMax && v > goal;
+    return '<div class="nrow"><div class="nrow-top"><span>' + esc(label) + '</span><b class="num">' + fmt(v, unit === t("mg") && v < 20 ? 1 : 0) + " / " + fmt(goal) + " " + esc(unit) + (isMax ? ' <small class="muted">' + esc(t("max")) + "</small>" : "") + '</b></div><div class="bar"><i style="width:' + (pct * 100).toFixed(0) + "%;background:" + (over ? "var(--pom)" : color) + '"></i></div></div>';
+  };
+  let h = sheetTop(t("nutrients")) + '<div class="stack"><div class="card">' +
+    bar(t("calories"), tt.kcal, tg.kcal + tt.ex, t("kcal"), "var(--sun)") + bar(t("protein"), tt.p, tg.p, t("g"), "var(--protein)") + bar(t("carbs"), tt.c, tg.c, t("g"), "var(--carbs)") + bar(t("fat"), tt.f, tg.f, t("g"), "var(--fat)") + "</div>" +
+    '<div class="label" style="margin:4px 4px 0">' + esc(t("vitaminsMinerals")) + '</div><div class="card">';
+  const colors = ["var(--leaf)", "var(--pom)", "var(--water)", "var(--fat)", "var(--sun)", "var(--protein)", "var(--leaf)"];
+  window.MICRO_KEYS.forEach((k, i) => { h += bar(t("mi_" + k), tt.mi[i], mt[i], i < 2 ? t("g") : t("mg"), colors[i], i === 1 || i === 2); });
+  h += "</div>";
+  const d = day();
+  if (d.food.length && tt.miKnown < d.food.length) h += '<p class="small muted" style="margin:0">' + esc(t("microPartial")) + "</p>";
+  h += '<p class="small muted" style="margin:0">' + esc(t("microNote")) + "</p></div>";
+  return h;
+};
+
+/* ---------- Meal planner ---------- */
+SHEETS.planner = () => {
+  if (!S.plan || planDayIndex() < 0) {
+    return sheetTop(t("mealPlan")) + '<div class="stack center"><div class="big-emoji huge">🗓️</div><p>' + esc(t("plannerIntro", { n: fmt(targets().kcal) })) + '</p><button class="btn sun block big" data-act="planNew">' + ic("calendar") + esc(t("makePlan")) + "</button></div>";
+  }
+  const di = SH.day != null ? SH.day : Math.max(0, planDayIndex());
+  const pd = S.plan.days[di], k = addDays(S.plan.start, di), logged = (day(k).planned) || {};
+  let h = sheetTop(t("mealPlan")) + '<div class="chips daychips">' + S.plan.days.map((_, i) => { const kk = addDays(S.plan.start, i); return '<button class="chip' + (i === di ? " on" : "") + '" data-act="planDay" data-i="' + i + '">' + esc(kk === dk() ? t("today") : weekdayShort(kk)) + "</button>"; }).join("") + "</div>";
+  const total = ["b", "l", "d", "s"].reduce((a, m) => a + planKcal(pd[m].items), 0);
+  h += '<p class="small muted num" style="margin:10px 4px">' + esc(dateLabel(k, true)) + " · " + fmt(total) + " " + esc(t("kcal")) + "</p>";
+  ["b", "l", "d", "s"].forEach(m => {
+    const it = pd[m];
+    h += '<section class="card" style="margin-bottom:12px"><div class="meal-head"><span class="meal-ic">' + mealEmoji(m) + "</span><h2>" + esc(mealName(m)) + '</h2><span class="meal-kcal num">' + fmt(planKcal(it.items)) + '</span><button class="iconbtn sm flat" data-act="planShuffle" data-day="' + di + '" data-m="' + m + '" aria-label="' + esc(t("shuffle")) + '">' + ic("shuffle") + "</button></div>" +
+      '<div class="list">' + it.items.map(x => { const f = FOOD[x[0]]; return '<div class="row"><span class="fthumb">' + foodEmoji(f) + '</span><div class="grow"><div class="t">' + esc(nm(f)) + '</div><div class="s num">' + esc(servingLabel(f, x[1])) + '</div></div><div class="k num">' + fmt(f.kcal * x[1]) + "</div></div>"; }).join("") + "</div>" +
+      (k === dk() ? (logged[m] ? '<div class="small muted" style="margin-top:8px">' + ic("check") + " " + esc(t("logged")) + "</div>" : '<button class="btn ghost block" style="margin-top:8px" data-act="logPlan" data-day="' + di + '" data-m="' + m + '">' + ic("plus") + esc(t("logThis")) + "</button>") : "") + "</section>";
+  });
+  h += '<button class="btn ghost block" data-act="planNew">' + ic("shuffle") + esc(t("newPlan")) + "</button>";
+  return h;
+};
+
+/* ---------- Monthly report ---------- */
+function monthKeys(y, m) { const out = [], d = new Date(y, m, 1); while (d.getMonth() === m) { out.push(dk(d)); d.setDate(d.getDate() + 1); } return out; }
+function monthName(y, m) { return lang() === "en" ? new Date(y, m, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : MONTHS[lang()][m] + " " + loc(y); }
+SHEETS.report = () => {
+  const now = new Date(), y = SH.y != null ? SH.y : now.getFullYear(), m = SH.m2 != null ? SH.m2 : now.getMonth();
+  const keys = monthKeys(y, m).filter(k => k <= dk()), tg = targets();
+  const lg = keys.filter(k => day(k).food.length);
+  const avg = f => (lg.length ? lg.reduce((a, k) => a + totals(k)[f], 0) / lg.length : 0);
+  const avgMi = i => (lg.length ? lg.reduce((a, k) => a + totals(k).mi[i], 0) / lg.length : 0);
+  let ex = 0, exMin = 0, exKc = 0; keys.forEach(k => day(k).ex.forEach(e => { ex++; exMin += e.min || 0; exKc += e.kcal; }));
+  const ws = sortedWeights().filter(w => w.d.slice(0, 7) === keys[0].slice(0, 7));
+  const wChange = ws.length > 1 ? ws[ws.length - 1].kg - ws[0].kg : null;
+  const fasts = S.fast.history.filter(f => dk(new Date(f.start)).slice(0, 7) === keys[0].slice(0, 7) && f.end - f.start >= f.plan * 3600000).length;
+  const counts = {}; lg.forEach(k => day(k).food.forEach(e => { const key = e.n[0]; counts[key] = counts[key] || { e, n: 0 }; counts[key].n++; }));
+  const top = Object.values(counts).sort((a, b) => b.n - a.n).slice(0, 5);
+  const onTarget = lg.filter(k => Math.abs(totals(k).kcal - tg.kcal) <= tg.kcal * 0.1).length;
+  const sl = keys.map(k => day(k).sleep).filter(Boolean);
+  let h = sheetTop(t("monthlyReport"), { extra: '<button class="iconbtn" data-act="printReport" aria-label="' + esc(t("savePdf")) + '">' + ic("print") + "</button>" }) +
+    '<div class="month-nav"><button class="iconbtn sm" data-act="reportMonth" data-d="-1" aria-label="' + esc(t("prevMonth")) + '">' + ic("left", "flip") + "</button><b>" + esc(monthName(y, m)) + '</b><button class="iconbtn sm" data-act="reportMonth" data-d="1" aria-label="' + esc(t("nextMonth")) + '"' + (y === now.getFullYear() && m === now.getMonth() ? " disabled" : "") + ">" + ic("right", "flip") + "</button></div>" +
+    '<div id="print-area" class="stack">' +
+    '<div class="print-only"><h1>Xorak · خۆراک</h1><p>' + esc(t("monthlyReport")) + " · " + esc(monthName(y, m)) + (S.profile.name ? " · " + esc(S.profile.name) : "") + "</p></div>";
+  if (!lg.length && !ex) return h + '<p class="empty pad">' + esc(t("reportEmpty")) + "</p></div>";
+  h += '<div class="tiles"><div class="tile"><b class="num">' + fmt(lg.length) + "<small>/" + fmt(keys.length) + "</small></b><span>" + esc(t("daysLogged")) + '</span></div><div class="tile"><b class="num">' + fmt(onTarget) + "</b><span>" + esc(t("daysOnTarget")) + '</span></div><div class="tile"><b class="num">' + (wChange == null ? "–" : (wChange > 0 ? "+" : "") + fmt(wShow(wChange), 1)) + "</b><span>" + esc(t("weightChange")) + " (" + esc(wUnit()) + ")</span></div></div>" +
+    '<div class="card">' + calChart(keys, tg.kcal) + "</div>" +
+    '<div class="tiles"><div class="tile"><b class="num">' + fmt(avg("kcal")) + "</b><span>" + esc(t("avgKcal")) + '</span></div><div class="tile"><b class="num">' + fmt(avg("p")) + esc(t("g")) + "</b><span>" + esc(t("avgProtein")) + '</span></div><div class="tile"><b class="num">' + fmt(avgMi(0)) + esc(t("g")) + "</b><span>" + esc(t("avgFiber")) + "</span></div></div>" +
+    '<div class="tiles"><div class="tile"><b class="num">' + fmt(ex) + "</b><span>" + esc(t("workouts")) + '</span></div><div class="tile"><b class="num">' + fmt(exMin) + "</b><span>" + esc(t("minutes")) + '</span></div><div class="tile"><b class="num">' + fmt(exKc) + "</b><span>" + esc(t("kcalBurned")) + "</span></div></div>" +
+    '<div class="tiles"><div class="tile"><b class="num">' + fmt(fasts) + "</b><span>" + esc(t("fastsDone")) + '</span></div><div class="tile"><b class="num">' + (sl.length ? fmt(sl.reduce((a, b) => a + b, 0) / sl.length, 1) : "–") + "</b><span>" + esc(t("avgSleep")) + '</span></div><div class="tile"><b class="num">' + fmt(avgMi(2)) + "</b><span>" + esc(t("avgSodium")) + "</span></div></div>";
+  if (top.length) h += '<div class="card"><div class="card-head"><h2>' + esc(t("topFoods")) + '</h2></div><div class="list">' + top.map(x => '<div class="row"><span class="fthumb">' + foodEmoji(x.e) + '</span><div class="grow"><div class="t">' + esc(nm(x.e)) + '</div></div><div class="k num">' + fmt(x.n) + "×</div></div>").join("") + "</div></div>";
+  h += '</div><button class="btn sun block big" data-act="printReport">' + ic("print") + esc(t("savePdf")) + '</button><p class="small muted center" style="margin:6px 0 0">' + esc(t("pdfHelp")) + "</p>";
+  return h;
+};
+
+Object.assign(A, {
+  nutrients: () => openSheet({ type: "nutrients" }),
+  planner: () => openSheet({ type: "planner", full: true }),
+  planNew: () => { makePlan(); SH.day = null; renderSheet(); toast(t("planReadyToast")); },
+  planDay: el => { SH.day = Number(el.dataset.i); renderSheet(); },
+  planShuffle: el => {
+    const di = Number(el.dataset.day), m = el.dataset.m, cur0 = S.plan.days[di][m];
+    S.plan.days[di][m] = planMeal(m, targets().kcal * MEAL_SHARE[m], cur0.i); save(); renderSheet();
+  },
+  logPlan: el => {
+    const di = Number(el.dataset.day), m = el.dataset.m, pd = S.plan.days[di][m], d = day(dk(), true);
+    pd.items.forEach(x => d.food.push(snapshot(FOOD[x[0]], x[1], m)));
+    d.planned = Object.assign({}, d.planned, { [m]: true }); save();
+    if (SH) renderSheet(); else render();
+    toast(t("addedTo", { meal: mealName(m) }));
+  },
+  report: () => openSheet({ type: "report", full: true }),
+  reportMonth: el => {
+    const now = new Date(); let y = SH.y != null ? SH.y : now.getFullYear(), m = (SH.m2 != null ? SH.m2 : now.getMonth()) + Number(el.dataset.d);
+    if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; }
+    if (y > now.getFullYear() || (y === now.getFullYear() && m > now.getMonth())) return;
+    SH.y = y; SH.m2 = m; renderSheet();
+  },
+  printReport: () => {
+    document.body.classList.add("printing");
+    const done = () => document.body.classList.remove("printing");
+    window.addEventListener("afterprint", done, { once: true });
+    try { window.print(); } catch (e) { done(); toast(t("pdfUnavailable")); }
+    setTimeout(done, 60000);
+  }
+});
+
+/* ---------- Drag a sheet down to close ---------- */
+(function sheetDrag() {
+  let y0 = null, panel = null, dy = 0;
+  sheetEl.addEventListener("touchstart", e => {
+    panel = e.target.closest(".sheet-panel");
+    if (!panel || panel.scrollTop > 0 || e.target.closest("input,textarea,select,.cam,.chips")) { panel = null; return; }
+    y0 = e.touches[0].clientY; dy = 0; panel.style.transition = "none";
+  }, { passive: true });
+  sheetEl.addEventListener("touchmove", e => {
+    if (!panel || y0 == null) return;
+    dy = Math.max(0, e.touches[0].clientY - y0);
+    if (panel.scrollTop > 0) dy = 0;
+    panel.style.transform = dy ? "translateY(" + dy + "px)" : "";
+  }, { passive: true });
+  sheetEl.addEventListener("touchend", () => {
+    if (!panel) return;
+    panel.style.transition = "transform .2s ease";
+    if (dy > 110) { panel.style.transform = "translateY(100%)"; setTimeout(() => { if (SH && SH.type === "player" && PL && !PL.done) { panel.style.transform = ""; return; } closeSheet(); }, 180); }
+    else panel.style.transform = "";
+    y0 = null; panel = null; dy = 0;
+  });
+})();
+
 /* ---------- Events ---------- */
 document.addEventListener("click", e => {
   const el = e.target.closest("[data-act]");
@@ -1002,6 +1224,7 @@ setInterval(() => {
     document.querySelectorAll('[data-fast="pct"]').forEach(n => { n.textContent = fmt(st.pct * 100) + "%"; });
   }
   const rc = document.querySelector('[data-rc="left"]'); if (rc) rc.textContent = dur(ramadanCountdown().left);
+  const rt = document.getElementById("rec-time"); if (rt && SH && SH.rec) { const s = Math.floor((Date.now() - recStart) / 1000); rt.textContent = loc(Math.floor(s / 60) + ":" + pad(s % 60)); }
   const ge = document.querySelector('[data-gym="el"]'); if (ge && S.gym.active) ge.textContent = dur(Date.now() - S.gym.active.start);
 }, 1000);
 let lastToday = dk();

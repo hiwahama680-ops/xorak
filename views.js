@@ -33,7 +33,7 @@ function header(title, extra = "", sub = "") {
 function ring(pct, color, size = 150, stroke = 14) {
   const r = (size - stroke) / 2, c = 2 * Math.PI * r, p = Math.max(0, Math.min(1, pct));
   return '<svg viewBox="0 0 ' + size + " " + size + '" aria-hidden="true"><circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="var(--card2)" stroke-width="' + stroke + '"/>' +
-    (p > 0 ? '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + (c * p).toFixed(1) + " " + c.toFixed(1) + '"/>' : "") + "</svg>";
+    (p > 0 ? '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="' + stroke + '" class="prog" stroke-linecap="round" stroke-dasharray="' + (c * p).toFixed(1) + " " + c.toFixed(1) + '"/>' : "") + "</svg>";
 }
 function logoSvg(cls = "logo") {
   let rays = "";
@@ -148,14 +148,15 @@ function renderToday() {
     '<div class="eq"><div class="eq-row"><span class="muted">' + esc(t("goalKcal")) + '</span><b class="num">' + fmt(tg.kcal) + "</b></div>" +
     '<div class="eq-row"><span class="muted"><i class="dot" style="background:var(--sun)"></i>' + esc(t("food")) + '</span><b class="num">−' + fmt(tt.kcal) + "</b></div>" +
     '<div class="eq-row"><span class="muted"><i class="dot" style="background:var(--leaf)"></i>' + esc(t("exercise")) + '</span><b class="num">+' + fmt(tt.ex) + "</b></div></div></div>" +
-    '<div class="macros">' + macro("p", t("protein"), "var(--protein)") + macro("c", t("carbs"), "var(--carbs)") + macro("f", t("fat"), "var(--fat)") + "</div></section>";
+    '<div class="macros">' + macro("p", t("protein"), "var(--protein)") + macro("c", t("carbs"), "var(--carbs)") + macro("f", t("fat"), "var(--fat)") + "</div>" +
+    '<button class="link hero-link" data-act="nutrients">' + esc(t("allNutrients")) + ic("right", "flip") + "</button></section>";
 
   if (S.ramadan && isToday) h += ramadanCard();
 
   // Quick actions
   const qa = (act, icon, label, bg, fg) => '<button class="qa" data-act="' + act + '"><i style="background:' + bg + ";color:" + fg + '">' + ic(icon) + "</i>" + esc(label) + "</button>";
-  h += '<div class="quick">' + qa("aiPhoto", "camera", t("scanMeal"), "var(--sun-soft)", "var(--sun)") + qa("foodSearch", "search", t("logFood"), "var(--card2)", "var(--fg)") +
-    qa("barcode", "barcode", t("barcode"), "var(--card2)", "var(--fg)") + qa("exSheet", "flame", t("logExercise"), "var(--leaf-soft)", "var(--leaf)") + "</div>";
+  h += '<div class="quick">' + qa("aiPhoto", "camera", t("scanMeal"), "linear-gradient(135deg,#ffb22e,#ff7a3d)", "#fff") + qa("aiVoice", "mic", t("voiceLog"), "linear-gradient(135deg,#7b6cff,#4f8dff)", "#fff") +
+    qa("foodSearch", "search", t("logFood"), "linear-gradient(135deg,#2fc27a,#1d8a51)", "#fff") + qa("barcode", "barcode", t("barcode"), "linear-gradient(135deg,#556270,#2b333b)", "#fff") + "</div>";
 
   if (S.fast.start) h += fastMini();
 
@@ -163,16 +164,18 @@ function renderToday() {
   meals().forEach(m => {
     const items = d.food.filter(e => e.m === m);
     const kc = items.reduce((a, e) => a + e.kcal * e.q, 0);
-    h += '<section class="card"><div class="meal-head"><h2>' + esc(mealName(m)) + '</h2><span class="meal-kcal num">' + (items.length ? fmt(kc) + " " + esc(t("kcal")) : "") + '</span><button class="addbtn" data-act="foodSearch" data-m="' + m + '" aria-label="' + esc(t("addTo", { meal: mealName(m) })) + '">' + ic("plus") + "</button></div>";
+    h += '<section class="card meal"><div class="meal-head"><span class="meal-ic">' + mealEmoji(m) + '</span><h2>' + esc(mealName(m)) + '</h2><span class="meal-kcal num">' + (items.length ? fmt(kc) + " " + esc(t("kcal")) : "") + '</span><button class="addbtn" data-act="foodSearch" data-m="' + m + '" aria-label="' + esc(t("addTo", { meal: mealName(m) })) + '">' + ic("plus") + "</button></div>";
     if (items.length) {
-      h += '<div class="list">' + items.map(e => '<button class="row" data-act="entry" data-u="' + e.u + '"><div class="grow"><div class="t">' + esc(nm(e)) + '</div><div class="s num">' + esc(servingLabel(e, e.q)) + '</div></div><div class="k num">' + fmt(e.kcal * e.q) + "</div></button>").join("") + "</div>" +
+      h += '<div class="list">' + items.map(e => '<button class="row" data-act="entry" data-u="' + e.u + '"><span class="fthumb">' + foodEmoji(e) + '</span><div class="grow"><div class="t">' + esc(nm(e)) + '</div><div class="s num">' + esc(servingLabel(e, e.q)) + '</div></div><div class="k num">' + fmt(e.kcal * e.q) + "</div></button>").join("") + "</div>" +
         '<div class="meal-foot"><span class="small muted num">' + esc(t("p")) + " " + fmt(items.reduce((a, e) => a + e.p * e.q, 0)) + esc(t("g")) + " · " + esc(t("c")) + " " + fmt(items.reduce((a, e) => a + e.c * e.q, 0)) + esc(t("g")) + " · " + esc(t("f")) + " " + fmt(items.reduce((a, e) => a + e.f * e.q, 0)) + esc(t("g")) + '</span><button class="link" data-act="saveMeal" data-m="' + m + '">' + esc(t("saveAsMeal")) + "</button></div>";
     } else {
       const y = day(addDays(cur, -1)).food.filter(e => e.m === m);
-      h += '<div class="empty">' + esc(t("emptyMeal")) + "</div>" + (y.length ? '<button class="link" data-act="copyMeal" data-m="' + m + '">' + ic("copy") + esc(t("copyYesterday")) + "</button>" : "");
+      h += '<button class="empty-add" data-act="foodSearch" data-m="' + m + '">' + ic("plus") + esc(t("tapToAdd")) + "</button>" + (y.length ? '<button class="link" data-act="copyMeal" data-m="' + m + '">' + ic("copy") + esc(t("copyYesterday")) + "</button>" : "");
     }
     h += "</section>";
   });
+
+  if (isToday) h += planCard();
 
   // Suggestions
   if (isToday && d.food.length && remaining > 0) h += suggestCard(remaining, tg.p - tt.p);
@@ -187,7 +190,7 @@ function renderToday() {
 
   // Activity
   h += '<section class="card"><div class="meal-head"><h2>' + esc(t("activity")) + '</h2><span class="meal-kcal num">' + (tt.ex ? "+" + fmt(tt.ex) + " " + esc(t("kcal")) : "") + '</span><button class="addbtn green" data-act="exSheet" aria-label="' + esc(t("logExercise")) + '">' + ic("plus") + '</button></div><div class="list">';
-  d.ex.forEach(e => { h += '<button class="row" data-act="exEntry" data-u="' + e.u + '"><div class="grow"><div class="t">' + esc(nm(e)) + '</div><div class="s num">' + fmt(e.min) + " " + esc(t("min")) + '</div></div><div class="k num" style="color:var(--leaf)">+' + fmt(e.kcal) + "</div></button>"; });
+  d.ex.forEach(e => { h += '<button class="row" data-act="exEntry" data-u="' + e.u + '"><span class="fthumb green">' + exEmoji(e) + '</span><div class="grow"><div class="t">' + esc(nm(e)) + '</div><div class="s num">' + fmt(e.min) + " " + esc(t("min")) + '</div></div><div class="k num" style="color:var(--leaf)">+' + fmt(e.kcal) + "</div></button>"; });
   const stepPct = Math.min(1, (d.steps || 0) / S.profile.stepGoal);
   h += '<button class="row" data-act="stepsSheet"><span class="thumb leaf">' + ic("walk") + '</span><div class="grow"><div class="t">' + esc(t("steps")) + '</div><div class="bar thin"><i style="width:' + (stepPct * 100).toFixed(0) + '%;background:var(--leaf)"></i></div><div class="s num">' + (d.steps ? fmt(d.steps) + " / " + fmt(S.profile.stepGoal) : esc(t("tapToAddSteps"))) + "</div></div></button></div></section>";
 
@@ -215,7 +218,7 @@ function suggestCard(remaining, proteinLeft) {
   const list = suggestions(remaining, proteinLeft);
   if (!list.length) return "";
   return '<section class="card"><div class="card-head"><h2>' + esc(t("ideasTitle", { n: fmt(remaining) })) + '</h2></div><div class="list">' +
-    list.map(f => '<div class="row"><div class="grow"><div class="t">' + esc(nm(f)) + '</div><div class="s num">' + esc(servingLabel(f)) + " · " + fmt(f.p) + esc(t("g")) + " " + esc(t("protein")) + '</div></div><div class="k num">' + fmt(f.kcal) + '</div><button class="addbtn" data-act="quickLog" data-id="' + f.id + '" aria-label="' + esc(t("add")) + '">' + ic("plus") + "</button></div>").join("") + "</div></section>";
+    list.map(f => '<div class="row"><span class="fthumb">' + foodEmoji(f) + '</span><div class="grow"><div class="t">' + esc(nm(f)) + '</div><div class="s num">' + esc(servingLabel(f)) + " · " + fmt(f.p) + esc(t("g")) + " " + esc(t("protein")) + '</div></div><div class="k num">' + fmt(f.kcal) + '</div><button class="addbtn" data-act="quickLog" data-id="' + f.id + '" aria-label="' + esc(t("add")) + '">' + ic("plus") + "</button></div>").join("") + "</div></section>";
 }
 function suggestions(remaining, proteinLeft) {
   const m = defaultMeal();
@@ -266,7 +269,7 @@ function renderTrain() {
   h += '<h2 class="section-title display">' + esc(t("homeWorkouts")) + "</h2>";
   window.ROUTINES.forEach(r => {
     const min = routineMinutes(r);
-    h += '<button class="card rowcard" data-act="routine" data-id="' + r.id + '"><span class="thumb big ' + (r.level === 3 ? "pom" : r.level === 2 ? "sun" : "leaf") + '">' + ic(r.met >= 7 ? "bolt" : r.id === "chair" ? "walk" : r.id === "stretch" || r.id === "desk" ? "spark" : "train") + '</span><span class="grow"><b>' + esc(r.n[li()]) + '</b><span class="s num">' + fmt(min) + " " + esc(t("min")) + " · ~" + fmt(exKcal(r.met, min)) + " " + esc(t("kcal")) + " · " + esc(t("level" + r.level)) + "</span></span>" + ic("right", "flip") + "</button>";
+    h += '<button class="card rowcard routine-card lv' + r.level + '" data-act="routine" data-id="' + r.id + '"><span class="rthumb">' + (window.EMOJI["r_" + r.id] || "💪") + '</span><span class="grow"><b>' + esc(r.n[li()]) + '</b><span class="s num">' + fmt(min) + " " + esc(t("min")) + " · ~" + fmt(exKcal(r.met, min)) + " " + esc(t("kcal")) + " · " + esc(t("level" + r.level)) + "</span></span>" + ic("right", "flip") + "</button>";
   });
   h += "</div></main>";
   return h;
@@ -319,6 +322,7 @@ function renderProgress() {
   h += '<section class="card level"><div class="lv-badge num">' + fmt(lvl) + '</div><div class="grow"><b>' + esc(t("levelN", { n: fmt(lvl) })) + '</b><div class="bar"><i style="width:' + (((x - lo) / (hi - lo)) * 100).toFixed(0) + '%;background:var(--sun)"></i></div><div class="s num">' + fmt(x) + " XP · " + esc(t("xpToNext", { n: fmt(hi - x) })) + '</div></div><div class="streak">' + ic("flame") + '<b class="num">' + fmt(streak()) + "</b><span>" + esc(t("dayStreak")) + "</span></div></section>";
 
   h += weeklyReport();
+  h += '<button class="card rowcard" data-act="report"><span class="rthumb small">📊</span><span class="grow"><b>' + esc(t("monthlyReport")) + '</b><span class="s">' + esc(t("monthlyReportSub")) + "</span></span>" + ic("right", "flip") + "</button>";
 
   // Weight
   const ws = sortedWeights();
@@ -428,7 +432,7 @@ function calChart(keys, goal) {
   keys.forEach((k, i) => {
     const v = vals[i], bx = L + i * bw + bw * 0.18, w = bw * 0.64;
     if (v > 0) g += '<rect x="' + bx.toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + (H - B - Y(v)).toFixed(1) + '" rx="' + Math.min(4, w / 2).toFixed(1) + '" fill="' + (v > goal * 1.05 ? "var(--pom)" : "var(--sun)") + '"/>';
-    if (keys.length <= 7 || i % 5 === 0 || i === keys.length - 1) g += '<text x="' + (bx + w / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + esc(keys.length <= 7 ? weekdayShort(k) : shortDate(k)) + "</text>";
+    if (keys.length <= 7 || (i % 5 === 0 && keys.length - 1 - i >= 3) || i === keys.length - 1) g += '<text x="' + (bx + w / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + esc(keys.length <= 7 ? weekdayShort(k) : shortDate(k)) + "</text>";
   });
   return '<svg class="chart" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(t("calories")) + '">' + g + "</svg>";
 }
@@ -468,13 +472,14 @@ function renderMe() {
     '<label class="row toggle"><div class="grow"><div class="t">' + esc(t("ramadanMode")) + '</div><div class="s wrap-s">' + esc(t("ramadanSub")) + '</div></div><input type="checkbox" id="set-ramadan"' + (S.ramadan ? " checked" : "") + "></label>" +
     (S.ramadan ? '<button class="row" data-act="citySheet"><div class="grow"><div class="t">' + esc(t("city")) + '</div><div class="s">' + esc(cityInfo().name) + "</div></div>" + ic("right", "flip") + "</button>" : "") + "</section>";
 
-  h += '<section class="card stack"><div class="card-head" style="margin:0"><h2>' + esc(t("aiTitle")) + '</h2><span class="pill ' + (S.ai.key ? "ok" : "") + '">' + esc(S.ai.key ? t("aiOn") : t("aiOff")) + "</span></div>" +
+  h += '<section class="card stack"><div class="card-head" style="margin:0"><h2>' + esc(t("aiTitle")) + '</h2><span class="pill ' + (aiReady() ? "ok" : "") + '">' + esc(aiReady() ? t("aiOn") : t("aiOff")) + "</span></div>" +
+    (AI_SERVER ? '<div class="notice ok small">' + esc(t("aiShared")) + '</div><details' + (S.ai.key ? " open" : "") + '><summary class="small muted">' + esc(t("ownKey")) + '</summary><div class="stack" style="margin-top:10px">' : "") +
     '<p class="small muted" style="margin:0">' + esc(t("aiDesc")) + "</p>" +
     seg("setProvider", "pv", [["gemini", "Google Gemini"], ["claude", "Anthropic Claude"]], S.ai.provider) +
     (S.ai.key ? "" : '<ol class="steps"><li>' + esc(t(S.ai.provider === "gemini" ? "aiStep1g" : "aiStep1c")) + ' <a href="' + (S.ai.provider === "gemini" ? "https://aistudio.google.com/apikey" : "https://console.anthropic.com/settings/keys") + '" target="_blank" rel="noopener">' + (S.ai.provider === "gemini" ? "aistudio.google.com/apikey" : "console.anthropic.com") + "</a></li><li>" + esc(t(S.ai.provider === "gemini" ? "aiStep2g" : "aiStep2c")) + "</li><li>" + esc(t("aiStep3")) + "</li></ol>") +
     '<label class="field"><span>' + esc(t("apiKey")) + '</span><input class="input" id="ai-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="' + esc(S.ai.provider === "gemini" ? "AIza…" : "sk-ant-…") + '" value="' + esc(S.ai.key) + '"></label>' +
     '<details><summary class="small muted">' + esc(t("advanced")) + '</summary><label class="field" style="margin-top:8px"><span>' + esc(t("model")) + '</span><input class="input" id="ai-model" autocapitalize="off" spellcheck="false" placeholder="' + esc(defaultModel()) + '" value="' + esc(S.ai.model) + '"></label></details>' +
-    '<div class="btns"><button class="btn sun" data-act="saveAi">' + esc(t("save")) + '</button><button class="btn ghost" data-act="testAi">' + esc(t("test")) + '</button></div><div id="ai-status"></div></section>';
+    '<div class="btns"><button class="btn sun" data-act="saveAi">' + esc(t("save")) + '</button><button class="btn ghost" data-act="testAi">' + esc(t("test")) + '</button></div><div id="ai-status"></div>' + (AI_SERVER ? "</div></details>" : "") + "</section>";
 
   h += '<section class="card stack"><h2>' + esc(t("myStuff")) + "</h2>" +
     '<button class="row" data-act="recipeNew"><span class="thumb sun">' + ic("bowl") + '</span><div class="grow"><div class="t">' + esc(t("newRecipe")) + '</div><div class="s">' + esc(t("newRecipeSub")) + "</div></div>" + ic("right", "flip") + "</button>" +
@@ -496,4 +501,43 @@ function saveSettingsInputs() {
   if (g("set-steps")) { const v = num(g("set-steps").value); if (v >= 1000 && v <= 50000) S.profile.stepGoal = Math.round(v); }
   if (g("set-glass")) S.profile.glassMl = Number(g("set-glass").value);
   if (g("set-ramadan")) S.ramadan = g("set-ramadan").checked;
+}
+
+const mealEmoji = m => (S.ramadan ? { b: "🌙", l: "☀️", d: "🌇", s: "🍎" } : { b: "🌅", l: "☀️", d: "🌙", s: "🍎" })[m];
+
+/* ---------- Meal plan ---------- */
+const MEAL_SHARE = { b: 0.25, l: 0.35, d: 0.3, s: 0.1 };
+function planMeal(m, kcalTarget, avoid) {
+  const combos = window.PLAN[m];
+  let idx = Math.floor(Math.random() * combos.length);
+  if (combos.length > 1 && idx === avoid) idx = (idx + 1) % combos.length;
+  const base = combos[idx].reduce((a, it) => a + FOOD[it[0]].kcal * it[1], 0);
+  const scale = Math.max(0.5, Math.min(2, Math.round((kcalTarget / base) * 4) / 4));
+  return { i: idx, items: combos[idx].map(it => [it[0], Math.max(0.25, Math.round(it[1] * scale * 4) / 4)]) };
+}
+function makePlan() {
+  const tg = targets(), days = [];
+  for (let d = 0; d < 7; d++) {
+    const day = {};
+    ["b", "l", "d", "s"].forEach(m => { const prev = days[d - 1] && days[d - 1][m]; day[m] = planMeal(m, tg.kcal * MEAL_SHARE[m], prev ? prev.i : -1); });
+    days.push(day);
+  }
+  S.plan = { start: dk(), days };
+  save();
+}
+function planDayIndex(k = dk()) {
+  if (!S.plan) return -1;
+  const diff = Math.round((parseKey(k) - parseKey(S.plan.start)) / 86400000);
+  return diff >= 0 && diff < 7 ? diff : -1;
+}
+const planKcal = items => items.reduce((a, it) => a + (FOOD[it[0]] ? FOOD[it[0]].kcal * it[1] : 0), 0);
+function planCard() {
+  const i = planDayIndex();
+  if (i < 0) {
+    return '<button class="card rowcard plan-cta" data-act="planner"><span class="rthumb small">🗓️</span><span class="grow"><b>' + esc(t("mealPlan")) + '</b><span class="s">' + esc(t("mealPlanSub")) + "</span></span>" + ic("right", "flip") + "</button>";
+  }
+  const pd = S.plan.days[i], logged = day(dk()).planned || {};
+  return '<section class="card"><div class="card-head"><h2>🗓️ ' + esc(t("todaysPlan")) + '</h2><button class="chip" data-act="planner">' + esc(t("seeWeek")) + '</button></div><div class="list">' +
+    meals().filter(m => pd[m]).map(m => '<div class="row"><span class="fthumb">' + mealEmoji(m) + '</span><div class="grow"><div class="t">' + esc(mealName(m)) + '</div><div class="s">' + esc(pd[m].items.map(it => nm(FOOD[it[0]])).join(" · ")) + '</div></div><div class="k num">' + fmt(planKcal(pd[m].items)) + "</div>" +
+      (logged[m] ? '<span class="done-badge">' + ic("check") + "</span>" : '<button class="addbtn" data-act="logPlan" data-day="' + i + '" data-m="' + m + '" aria-label="' + esc(t("logThis")) + '">' + ic("plus") + "</button>") + "</div>").join("") + "</div></section>";
 }
