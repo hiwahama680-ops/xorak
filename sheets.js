@@ -593,20 +593,31 @@ function stopCamera() {
 function loadScript(src) {
   return new Promise((ok, bad) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
 }
+function beepOnce() { try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); beep(1200, 0.08); } catch (e) { /* ignore */ } }
 async function startCamera() {
   const v = document.getElementById("bc-video"), st = document.getElementById("bc-cam-status");
   if (!v) return;
-  const onCode = code => { stopCamera(); const inp = document.getElementById("bc-in"); if (inp) inp.value = code; const w = document.getElementById("bc-cam"); if (w) w.hidden = true; bcLookup(code); };
+  let last = null;
+  const onCode = raw => {
+    const code = String(raw || "").replace(/\D/g, "");
+    if (!barcodeOk(code)) return;
+    if (last !== code) { last = code; return; } // wait for a second identical read
+    stopCamera(); try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) { /* ignore */ }
+    beepOnce();
+    const inp = document.getElementById("bc-in"); if (inp) inp.value = code;
+    const w = document.getElementById("bc-cam"); if (w) w.hidden = true;
+    bcLookup(code);
+  };
   try {
     if ("BarcodeDetector" in window) {
-      camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } });
       v.srcObject = camStream; await v.play();
       const det = new window.BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] });
-      scanLoop = setInterval(async () => { try { const r = await det.detect(v); if (r && r[0]) onCode(r[0].rawValue); } catch (e) { /* keep trying */ } }, 300);
+      scanLoop = setInterval(async () => { try { const r = await det.detect(v); if (r && r[0]) onCode(r[0].rawValue); } catch (e) { /* keep trying */ } }, 200);
     } else {
       if (!window.ZXing) await loadScript("https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js");
       zxReader = new window.ZXing.BrowserMultiFormatReader();
-      await zxReader.decodeFromConstraints({ video: { facingMode: "environment" } }, v, (res) => { if (res) onCode(res.getText()); });
+      await zxReader.decodeFromConstraints({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } }, v, (res) => { if (res) onCode(res.getText()); });
     }
     if (st) st.textContent = t("pointCamera");
   } catch (e) {
@@ -623,30 +634,76 @@ SHEETS.barcode = () => {
     '<div id="bc-result"></div></div>';
 };
 let BC = null;
+// Check digit for EAN-8, UPC-A, EAN-13, GTIN-14
+function barcodeOk(c) {
+  if (![8, 12, 13, 14].includes(c.length)) return c.length >= 6 && c.length <= 14;
+  const d = c.split("").map(Number), check = d.pop();
+  let sum = 0; d.reverse().forEach((x, i) => { sum += x * (i % 2 === 0 ? 3 : 1); });
+  return (10 - (sum % 10)) % 10 === check;
+}
+function barcodeVariants(c) {
+  const v = [c];
+  if (c.length === 12) v.push("0" + c);
+  if (c.length === 13 && c[0] === "0") v.push(c.slice(1));
+  if (c.length === 14 && c[0] === "0") v.push(c.slice(1));
+  return v;
+}
+function offParse(p) {
+  const n = p.nutriments || {}, sq = +p.serving_quantity || 0;
+  let kcal = n["energy-kcal_100g"];
+  if (kcal == null && n["energy-kj_100g"] != null) kcal = n["energy-kj_100g"] / 4.184;
+  if (kcal == null && n.energy_100g != null) kcal = n.energy_100g / 4.184;
+  let per = 1;
+  if (kcal == null && n["energy-kcal_serving"] != null && sq) { kcal = n["energy-kcal_serving"]; per = 100 / sq; kcal *= per; }
+  const v = (k, mul = 1) => { const x = n[k + "_100g"] != null ? n[k + "_100g"] : n[k + "_serving"] != null && sq ? n[k + "_serving"] * (100 / sq) : null; return x == null ? 0 : +x * mul; };
+  const base = (lang() === "ar" && p.product_name_ar) || (lang() === "ckb" && (p.product_name_ckb || p.product_name_ku)) || p.product_name_en || p.product_name || p.generic_name || "";
+  const brand = p.brands ? String(p.brands).split(",")[0].trim() : "";
+  const name = brand && !base.toLowerCase().includes(brand.toLowerCase()) ? (base ? base + " · " + brand : brand) : base;
+  return { name, kcal: kcal == null ? null : +kcal, p: v("proteins"), c: v("carbohydrates"), f: v("fat"), mi: [v("fiber"), v("sugars"), v("sodium", 1000), v("potassium", 1000), v("calcium", 1000), v("iron", 1000), v("vitamin-c", 1000)], grams: sq || 100 };
+}
 async function bcLookup(code) {
   code = String(code || "").replace(/\D/g, "");
   const out = document.getElementById("bc-result"); if (!out || !code) return;
-  out.innerHTML = '<div class="notice"><span class="spinner sm"></span> ' + esc(t("lookingUp")) + "</div>";
-  try {
-    const r = await fetch("https://world.openfoodfacts.org/api/v2/product/" + code + ".json?fields=product_name,product_name_en,product_name_ar,brands,nutriments,serving_quantity");
-    const j = await r.json();
-    if (!j.product || !j.product.nutriments) throw new Error("nf");
-    const n = j.product.nutriments;
-    const kcal = n["energy-kcal_100g"] != null ? n["energy-kcal_100g"] : n.energy_100g ? n.energy_100g / 4.184 : null;
-    if (kcal == null) throw new Error("nf");
-    const name = [(lang() === "ar" && j.product.product_name_ar) || j.product.product_name_en || j.product.product_name, j.product.brands].filter(Boolean).join(" · ") || code;
-    BC = { name, kcal: +kcal, p: +n.proteins_100g || 0, c: +n.carbohydrates_100g || 0, f: +n.fat_100g || 0, grams: +j.product.serving_quantity || 100 };
-    bcRender();
-  } catch (e) {
-    out.innerHTML = '<div class="notice err">' + esc(e.message === "nf" ? t("notFound") : t("netError")) + '</div><button class="btn ghost block" style="margin-top:10px" data-act="customFood">' + ic("pen") + esc(t("createFood")) + "</button>";
+  if (!barcodeOk(code)) { out.innerHTML = '<div class="notice err">' + esc(t("invalidCode")) + "</div>"; return; }
+  BC = null; SH.code = code;
+  // Saved on this phone already?
+  const mem = (S.barcodes || {})[code];
+  if (mem) {
+    if (mem.food && getFood(mem.food)) { pushSheet({ type: "foodDetail", id: mem.food, qty: 1, m: SH.m, unitMode: "srv" }); return; }
+    if (mem.kcal != null) { BC = Object.assign({ code, saved: true }, mem); bcRender(); return; }
   }
+  out.innerHTML = '<div class="notice"><span class="spinner sm"></span> ' + esc(t("lookingUp")) + "</div>";
+  let found = null, netFail = false;
+  for (const c of barcodeVariants(code)) {
+    try {
+      const r = await fetch("https://world.openfoodfacts.org/api/v2/product/" + c + ".json?fields=product_name,product_name_en,product_name_ar,product_name_ckb,product_name_ku,generic_name,brands,nutriments,serving_quantity");
+      if (r.status === 404) continue;
+      const j = await r.json();
+      if (j && j.product && (j.status === 1 || j.product.product_name || j.product.nutriments)) { found = j.product; break; }
+    } catch (e) { netFail = true; }
+  }
+  if (!SH || SH.type !== "barcode") return;
+  if (found) {
+    const x = offParse(found);
+    if (x.kcal != null && x.kcal >= 0) { BC = Object.assign({ code }, x, { name: x.name || code }); bcRender(); return; }
+    bcMissing(x.name, "noNutrition"); return;
+  }
+  if (netFail) { out.innerHTML = '<div class="notice err">' + esc(t("netError")) + '</div><button class="btn ghost block" style="margin-top:10px" data-act="bcLookup">' + esc(t("retry")) + "</button>"; return; }
+  bcMissing("", "notFoundAdd");
+}
+function bcMissing(name, msgKey) {
+  const out = document.getElementById("bc-result"); if (!out) return;
+  SH.prodName = name || "";
+  out.innerHTML = '<div class="card stack"><div class="food-hero"><span class="big-emoji">📦</span><div>' + (name ? "<b>" + esc(name) + "</b>" : "") + '<div class="small muted">' + esc(t(msgKey)) + "</div></div></div>" +
+    '<button class="btn sun block big" data-act="bcLabel">' + ic("camera") + esc(t("scanLabel")) + '</button><button class="btn ghost block" data-act="bcManual">' + ic("pen") + esc(t("enterYourself")) + '</button><p class="small muted" style="margin:0">' + esc(t("bcRemember")) + "</p></div>";
 }
 function bcRender() {
   const out = document.getElementById("bc-result"); if (!out || !BC) return;
   const g = BC.grams;
-  out.innerHTML = '<div class="card stack"><div><b>' + esc(BC.name) + '</b><div class="small muted">' + esc(t("per100", { k: fmt(BC.kcal) })) + '</div></div><label class="field"><span>' + esc(t("grams")) + '</span><input class="input num" id="bc-g" inputmode="decimal" value="' + fmt(g) + '"></label>' +
+  out.innerHTML = '<div class="card stack"><div class="food-hero"><span class="big-emoji">📦</span><div><b>' + esc(BC.name) + '</b><div class="small muted">' + esc(t("per100", { k: fmt(BC.kcal) })) + (BC.saved ? " · " + esc(t("savedOnPhone")) : "") + '</div></div></div><label class="field"><span>' + esc(t("grams")) + '</span><input class="input num" id="bc-g" inputmode="decimal" value="' + fmt(g) + '"></label>' +
     '<div id="bc-tiles">' + nutriTiles(BC.kcal * g / 100, BC.p * g / 100, BC.c * g / 100, BC.f * g / 100) + "</div>" + mealSeg() + '<button class="btn sun block big" data-act="bcAdd">' + esc(t("addTo", { meal: mealName(SH.m) })) + "</button></div>";
 }
+function rememberBarcode(code, val) { if (!code) return; S.barcodes = S.barcodes || {}; S.barcodes[code] = val; save(); }
 
 /* ---------- Share card ---------- */
 async function makeShareImage() {
@@ -816,7 +873,8 @@ const A = {
     const grams = SH.quick ? 0 : num(g("cf-g").value) || 0;
     const f = { id: SH.quick ? "quick" : "c" + uid(), n: [name, name, name, name], unit: "portion", cnt: 1, g: grams, s: SH.quick ? "" : g("cf-sv").value.trim(), kcal, p: num(g("cf-p").value) || 0, c: num(g("cf-c").value) || 0, f: num(g("cf-f").value) || 0, cat: "mine" };
     if (f.s) f.unit = null;
-    if (!SH.quick && g("cf-save").checked) S.custom.push(f);
+    if (SH.barcode) f.em = "📦";
+    if (!SH.quick && (g("cf-save").checked || SH.barcode)) { S.custom.push(f); if (SH.barcode) rememberBarcode(SH.barcode, { food: f.id }); }
     addEntry(f, 1, SH.m); const m = SH.m; closeSheet(); toast(t("addedTo", { meal: mealName(m) }));
   },
   entry: el => { const e = day().food.find(x => x.u === el.dataset.u); openSheet({ type: "entry", u: e.u, qty: e.q, m: e.m }); },
@@ -975,7 +1033,15 @@ const A = {
     a = String(a || "").trim(); if (!a) return;
     runFoodAI(a);
   },
-  aiAdd: () => { const items = SH.items.filter(i => i.on); if (!items.length) return; items.forEach(i => addEntry(i, i.q, SH.m)); const m = SH.m; closeSheet(); toast(t("addedTo", { meal: mealName(m) })); },
+  aiAdd: () => {
+    const items = SH.items.filter(i => i.on); if (!items.length) return;
+    if (SH.barcode) {
+      const sum = k => items.reduce((a, i) => a + i[k] * i.q, 0), nm0 = SH.prodName || items[0].n[0];
+      const f = { id: "c" + uid(), n: SH.prodName ? [nm0, nm0, nm0, nm0] : items[0].n.slice(), unit: "portion", cnt: 1, g: Math.round(items.reduce((a, i) => a + (i.g || 0) * i.q, 0)), kcal: sum("kcal"), p: sum("p"), c: sum("c"), f: sum("f"), mi: [0, 1, 2, 3, 4, 5, 6].map(x => items.reduce((a, i) => a + ((i.mi && i.mi[x]) || 0) * i.q, 0)), em: "📦", cat: "mine" };
+      S.custom.push(f); rememberBarcode(SH.barcode, { food: f.id }); addEntry(f, 1, SH.m);
+      const m = SH.m; closeSheet(); toast(t("addedTo", { meal: mealName(m) })); return;
+    }
+    items.forEach(i => addEntry(i, i.q, SH.m)); const m = SH.m; closeSheet(); toast(t("addedTo", { meal: mealName(m) })); },
   coach: () => openSheet({ type: "coach", full: true }),
   coachSend: () => { const i = document.getElementById("coach-in"); coachSend(i.value); },
   coachAsk: el => coachSend(el.dataset.q),
@@ -984,9 +1050,12 @@ const A = {
   // barcode
   barcode: () => { BC = null; openSheet({ type: "barcode", m: curMeal() }); },
   bcLookup: () => { stopCamera(); const w = document.getElementById("bc-cam"); if (w) w.hidden = true; bcLookup(document.getElementById("bc-in").value); },
+  bcLabel: () => pushSheet({ type: "aiPhoto", mode: "photo", m: SH.m, barcode: SH.code, prodName: SH.prodName, hint: t("labelHint") + (SH.prodName ? " (" + SH.prodName + ")" : "") }),
+  bcManual: () => pushSheet({ type: "custom", m: SH.m, name: SH.prodName || "", barcode: SH.code }),
   bcAdd: () => {
     const g = num((document.getElementById("bc-g") || {}).value) || BC.grams;
-    addEntry({ id: "bc", n: [BC.name, BC.name, BC.name, BC.name], unit: "g", cnt: g, g, kcal: BC.kcal * g / 100, p: BC.p * g / 100, c: BC.c * g / 100, f: BC.f * g / 100 }, 1, SH.m);
+    rememberBarcode(BC.code, { name: BC.name, kcal: BC.kcal, p: BC.p, c: BC.c, f: BC.f, mi: BC.mi || null, grams: g });
+    addEntry({ id: "bc", n: [BC.name, BC.name, BC.name, BC.name], unit: "g", cnt: g, g, kcal: BC.kcal * g / 100, p: BC.p * g / 100, c: BC.c * g / 100, f: BC.f * g / 100, mi: BC.mi ? BC.mi.map(x => x * g / 100) : null, em: "📦" }, 1, SH.m);
     const m = SH.m; closeSheet(); toast(t("addedTo", { meal: mealName(m) }));
   },
 

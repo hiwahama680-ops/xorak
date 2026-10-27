@@ -17,7 +17,7 @@ function defaults() {
     fast: { plan: 16, start: null, history: [] },
     gym: { sessions: [], active: null },
     ai: { provider: "gemini", key: "", model: "" },
-    chat: [], badges: {}, scans: 0, shares: 0, plan: null, deviceId: uid()
+    chat: [], badges: {}, scans: 0, shares: 0, plan: null, barcodes: {}, deviceId: uid()
   };
 }
 function migrate(j) {

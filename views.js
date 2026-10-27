@@ -493,7 +493,7 @@ function renderMe() {
   h += '<p class="small muted center">' + esc(t("disclaimer")) + "<br>Xorak · خۆراک · v2.0</p></div></main>";
   return h;
 }
-const defaultModel = () => (S.ai.provider === "gemini" ? "gemini-2.5-flash" : "claude-haiku-5-5");
+const defaultModel = () => (S.ai.provider === "gemini" ? "gemini-flash-latest" : "claude-haiku-5-5");
 function saveSettingsInputs() {
   const g = id => document.getElementById(id);
   if (g("set-kcal")) { const v = num(g("set-kcal").value); S.profile.kcalOverride = v >= 800 && v <= 6000 ? Math.round(v) : 0; }
