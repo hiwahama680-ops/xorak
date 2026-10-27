@@ -4,17 +4,17 @@ A calorie, workout and fasting tracker made for Kurdish food. English and Sorani
 It runs in Safari and installs to the iPhone home screen like a normal app. No App Store, no Mac.
 
 ## What's inside
-- Food diary: breakfast, lunch, dinner, snacks (or Suhoor / Iftar in Ramadan mode)
-- 110+ foods with Kurdish and Iraqi dishes first: dolma, qima, tashreeb, biryani, kubba, shifta, savar, tanuri bread, dew, kleicha…
-- AI photo scan and "describe your meal" (Google Gemini or Anthropic Claude, your own key)
-- AI coach chat that knows your goals and today's diary
-- Barcode lookup (Open Food Facts), custom foods, favorites, recent, quick add, copy yesterday's meal
-- Daily calorie and macro targets from your age, height, weight, activity and goal
-- Exercise log with 24 activities (including halparke and mountain hiking), steps, and 6 guided home workouts with a timer
-- Intermittent fasting timer (12:12 to 23:1) with stages and history
-- Weight tracking with chart, BMI and an estimated goal date
-- Water tracker, weekly and monthly charts, streaks
-- Dark mode, kg/lb, works offline, backup and restore
+- **4 languages:** Kurdish Sorani, Kurdish Kurmanji (Badini), Arabic, English. Right-to-left layout and Kurdish/Arabic numerals.
+- **Easy setup:** a 6-step wizard builds your calorie, protein and water plan
+- **Food diary** with 200+ foods (Kurdish & Iraqi dishes first), servings or grams, favorites, recent, saved meals, recipes, quick add, copy yesterday, undo
+- **AI photo scan, "describe your meal" and AI coach** (Google Gemini free key or Claude key)
+- **Camera barcode scanner** (Open Food Facts)
+- **"What can I eat?" ideas** for the calories you have left, no AI needed
+- **Train:** 11 guided home workouts (incl. gentle chair workout for seniors, 7-minute, Ramadan pre-iftar), gym log with sets/reps and personal records, 32 activities, steps
+- **Fasting timer** (12:12 to 23:1) and **Ramadan mode** with suhoor/iftar countdown for 36 cities or your location
+- **Progress:** weekly report, weight chart, BMI, body measurements & body-fat estimate, private progress photos, sleep & mood, levels/XP, streaks, 20 achievements
+- **Daily score**, tip of the day, shareable daily card
+- Large-text mode, dark mode, kg/lb, works offline, backup & restore
 
 ## Put it on GitHub Pages (free)
 1. Upload all files in this folder to a GitHub repository (root of the repo).
