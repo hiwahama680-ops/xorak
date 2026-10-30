@@ -166,6 +166,7 @@ window.I18N.en = {
   bcRemember: "You only do this once. Next time you scan it, Xorak remembers it.",
   savedOnPhone: "saved on this phone",
   labelHint: "This is the nutrition label or package of a product. Read the values for one serving",
+  aiBusy: "The AI is very busy right now. Wait a minute and tap Try again.",
   tips: [
     "Drink a glass of water before each meal. It helps you feel full sooner.",
     "Fill half your plate with salad or vegetables, then add rice or bread.",

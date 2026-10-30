@@ -481,9 +481,14 @@ async function callAI({ system, messages, json }) {
   const key = S.ai.key.trim(), model = (S.ai.model || defaultModel()).trim();
   if (!key && AI_SERVER) {
     const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: geminiParts(m.parts) }));
-    const res = await fetch(AI_SERVER, { method: "POST", headers: { "content-type": "application/json", "x-device-id": S.deviceId }, body: JSON.stringify({ system: system || null, contents, json: !!json }) });
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 45000);
+    let res;
+    try { res = await fetch(AI_SERVER, { method: "POST", headers: { "content-type": "application/json", "x-device-id": S.deviceId }, body: JSON.stringify({ system: system || null, contents, json: !!json }), signal: ctl.signal }); }
+    catch (e) { throw new Error(e && e.name === "AbortError" ? t("aiBusy") : t("netError")); }
+    finally { clearTimeout(timer); }
     const j = await res.json().catch(() => ({}));
-    if (res.status === 429) throw new Error(t("aiLimit"));
+    if (res.status === 429 && j.error === "limit") throw new Error(t("aiLimit"));
+    if (res.status === 503 || res.status === 504 || res.status === 429 || j.error === "busy") throw new Error(t("aiBusy"));
     if (!res.ok || typeof j.text !== "string") throw new Error(j.error || "HTTP " + res.status);
     return j.text;
   }
@@ -555,7 +560,7 @@ async function runFoodAI(answer) {
       me.ask = null;
       if (!items.length) me.err = out.note || t("aiNoFood"); else { me.items = items; me.note = out.note || ""; S.scans++; save(); }
     }
-  } catch (e) { me.err = t("aiError") + " " + e.message; }
+  } catch (e) { me.err = [t("aiBusy"), t("aiLimit"), t("netError")].includes(e.message) ? e.message : t("aiError") + " " + e.message; }
   me.busy = false;
   if (SH === me) renderSheet();
 }

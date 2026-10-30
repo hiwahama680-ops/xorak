@@ -166,6 +166,7 @@ window.I18N.kmr = {
   bcRemember: "Tu vê tenê carekê dikî. Cara din ku tu wê bixwînî, Xorak bi bîr tîne.",
   savedOnPhone: "li ser vê telefonê tomarkirî",
   labelHint: "Ev etîketa xurekê an pakêta berhemekê ye. Nirxan bo yek beşê bixwîne",
+  aiBusy: "AI niha gelek mijûl e. Deqeyekê bisekine û «Dîsa biceribîne» bitikîne.",
   tips: [
     "Berî her xwarinê îstikanek av vexwe. Alîkariya te dike ku zûtir têr bibî.",
     "Nîvê teyrika xwe bi zelate an sebze tije bike, paşê birinc an nan zêde bike.",
